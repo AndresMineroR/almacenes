@@ -9,9 +9,12 @@ const List<Color> _colorThemes =[
   Colors.yellow,
   Colors.orange,
   Colors.pink,
+
 ];
 
+
 class AppTheme{
+  static const Color nearlyWhite = Color(0xFFFEFEFE);
   final int selectedColor;
   AppTheme({this.selectedColor = 0})
       : assert(selectedColor >= 0 && selectedColor <= _colorThemes.length-1,

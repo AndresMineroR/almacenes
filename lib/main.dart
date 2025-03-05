@@ -1,3 +1,4 @@
+import 'package:almacenes/pages/scan_page.dart';
 import 'package:flutter/material.dart';
 
 //importaciones de FireBase
@@ -6,6 +7,7 @@ import 'package:almacenes/config/theme/app_theme.dart';
 import 'package:almacenes/pages/add_producto_page.dart';
 import 'package:almacenes/pages/edit_producto_page.dart';
 import 'package:almacenes/pages/home_page.dart';
+import 'package:almacenes/pages/homeI_page.dart';
 import 'package:almacenes/pages/productos_page.dart';
 import 'package:almacenes/pages/profile_page.dart';
 import 'firebase_options.dart';
@@ -29,8 +31,9 @@ class MyApp extends StatelessWidget {
     title: 'MaterialApp',
     initialRoute: '/',
     routes: {
-        '/': (context) => Home(),
-        '/profil': (context) => Perfil(),
+        '/': (context) => HomeI(),
+        '/scan_code_bar': (context) => ScanCode(),
+        '/perfil': (context) => Perfil(),
         '/productos': (context) => Productos(),
         '/add': (context) => AddProductoPage(),
         '/edit': (context) => EditProductoPage(),
