@@ -25,7 +25,7 @@ Future<List> getProductos() async{
   return productos;
 }
 
-//fubcion para guardar
+//funcion para guardar
 Future<void> addProducto(String nom, String des, int cat, int pre, String cad, String lt) async{
   await baseInventario.collection('productos').add({
     'Nombre': nom,
