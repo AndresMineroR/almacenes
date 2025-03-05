@@ -1,0 +1,1 @@
+C:\laragon\www\almacenes\build\app\intermediates\cxx\Debug\a6d1a5x1\obj\arm64-v8a
