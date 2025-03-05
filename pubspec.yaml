@@ -36,12 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   firebase_core: ^3.12.1
   cloud_firestore: ^5.6.5
-<<<<<<< HEAD
   simple_barcode_scanner: ^0.3.0
-=======
-  simple_barcode_scanner: ^0.2.0
->>>>>>> 9a1ada54c6a8bf560de4656489c74318c0a49cb1
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
