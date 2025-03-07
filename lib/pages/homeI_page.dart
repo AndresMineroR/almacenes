@@ -69,6 +69,20 @@ class _HomeState extends State<HomeI> {
                 Navigator.pushNamed(context, '/productos');
               },
             ),
+            ListTile(
+              leading: Icon(Icons.list),
+              title: Text('Almacenes'),
+              onTap: () {
+                Navigator.pushNamed(context, '/almacenes');
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.list),
+              title: Text('Categorías de producto'),
+              onTap: () {
+                Navigator.pushNamed(context, '/categorias');
+              },
+            ),
           ],
         ),
       ),

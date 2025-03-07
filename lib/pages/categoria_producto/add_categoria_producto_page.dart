@@ -1,28 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
-class AddProductoPage extends StatefulWidget {
-  const AddProductoPage({super.key});
+class AddCategoriaProductoPage extends StatefulWidget {
+  const AddCategoriaProductoPage({super.key});
 
 
   @override
-  State<AddProductoPage> createState() => _AddProductoPageState();
+  State<AddCategoriaProductoPage> createState() => _AddCategoriaProductoPageState();
 }
-class _AddProductoPageState extends State<AddProductoPage> {
+class _AddCategoriaProductoPageState extends State<AddCategoriaProductoPage> {
   GlobalKey<FormState> keyForm = GlobalKey();
-  TextEditingController nomCtrl = TextEditingController(text: '');
-  TextEditingController descCtrl = TextEditingController(text: '');
-  TextEditingController catCtrl = TextEditingController(text: '');
-  TextEditingController preCtrl = TextEditingController(text: '');
-  TextEditingController cadCtrl = TextEditingController(text: '');
-  TextEditingController ltCtrl = TextEditingController(text: '');
-  TextEditingController nameController = TextEditingController(text: '');
+  TextEditingController nomCtrlCat = TextEditingController(text: '');
+  TextEditingController descCtrlCat = TextEditingController(text: '');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agregar Producto'),
+        title: const Text('Agregar categoría de producto'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(10.0),
@@ -50,9 +45,9 @@ class _AddProductoPageState extends State<AddProductoPage> {
         formItemsDesign(
             Icons.abc,
             TextFormField(
-              controller: nomCtrl,
+              controller: nomCtrlCat,
               decoration: InputDecoration(
-                labelText: 'Nombre del producto',
+                labelText: 'Nombre de la categoría',
               ),
               keyboardType: TextInputType.text,
               //validator: validateName,
@@ -61,15 +56,15 @@ class _AddProductoPageState extends State<AddProductoPage> {
         formItemsDesign(
             Icons.abc,
             TextFormField(
-              controller: descCtrl,
+              controller: descCtrlCat,
               decoration: InputDecoration(
-                labelText: 'Descripción del producto',
+                labelText: 'Descripción de la categoría',
               ),
               keyboardType: TextInputType.text,
               //validator:,
             )),
 
-        formItemsDesign(
+        /*formItemsDesign(
             Icons.numbers,
             TextFormField(
               controller: catCtrl,
@@ -78,49 +73,14 @@ class _AddProductoPageState extends State<AddProductoPage> {
               ),
               keyboardType: TextInputType.number,
               //validator: validateName(catCtrl),
-            )),
+            )
+        ),*/
 
-        formItemsDesign(
-            Icons.attach_money,
-            TextFormField(
-              controller: preCtrl,
-              decoration: InputDecoration(
-                labelText: 'Precio del producto',
-              ),
-              keyboardType: TextInputType.number,
-            )),
-
-        formItemsDesign(
-            Icons.calendar_month,
-            TextFormField(
-              controller: cadCtrl,
-              decoration: InputDecoration(
-                labelText: 'Caducidad del producto',
-              ),
-              keyboardType: TextInputType.datetime,
-              //validator:,
-            )),
-
-        formItemsDesign(
-            Icons.abc,
-            TextFormField(
-              controller: ltCtrl,
-              decoration: InputDecoration(
-                labelText: 'Lote del producto',
-              ),
-              keyboardType: TextInputType.text,
-              //validator:,
-            )),
-
-              GestureDetector(
+               GestureDetector(
                   onTap: () async {
-                    await addProducto(
-                      nomCtrl.text,
-                      descCtrl.text,
-                      int.parse(catCtrl.text),
-                      int.parse(preCtrl.text),
-                      cadCtrl.text,
-                      ltCtrl.text
+                    await addCategoriaProducto(
+                      nomCtrlCat.text,
+                      descCtrlCat.text
                     ).then((_){
                       Navigator.pop(context);
                     });

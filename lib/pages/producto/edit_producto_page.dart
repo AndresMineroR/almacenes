@@ -37,7 +37,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
           margin: EdgeInsets.all(20.0),
           child: Form(
             key: keyForm,
-            child: formUI(), //Este metodo lo crearemos mas adelante
+            child: formUI(),
           ),
         ),
       ),
@@ -144,7 +144,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
             ],
                 begin: Alignment.topLeft, end: Alignment.bottomRight),
           ),
-          child: Text("Guardar",
+          child: Text("Actualizar",
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
