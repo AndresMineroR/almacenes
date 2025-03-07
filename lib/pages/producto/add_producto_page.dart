@@ -20,19 +20,19 @@ class _AddProductoPageState extends State<AddProductoPage> {
   TextEditingController ltCtrl = TextEditingController(text: '');
   TextEditingController uidAlma = TextEditingController(text: '');
 
-  List<dynamic> categorias = []; // Lista de categorías
-  String? selectedCategoria; // Variable para guardar la categoría seleccionada
+  List<dynamic> categorias = [];
+  String? selectedCategoria;
 
   @override
   void initState() {
     super.initState();
-    _loadCategorias(); // Cargar categorías al iniciar
+    _loadCategorias();
   }
 
   _loadCategorias() async {
     var categoriasData = await getCategoriasProducto();
     setState(() {
-      categorias = categoriasData; // Asignar las categorías a la lista
+      categorias = categoriasData;
     });
   }
 
@@ -50,7 +50,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
           margin: EdgeInsets.all(20.0),
           child: Form(
             key: keyForm,
-            child: formUI(), //Este metodo lo crearemos mas adelante
+            child: formUI(),
           ),
         ),
       ),
@@ -134,7 +134,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
               if (value != null) {
                 String formattedDate = DateFormat('yyyy-MM-dd').format(value);
                 setState(() {
-                  cadCtrl.text = formattedDate;  // Asignamos la fecha formateada al controlador
+                  cadCtrl.text = formattedDate;
                 });
               }
             },

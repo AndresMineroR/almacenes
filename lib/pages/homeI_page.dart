@@ -49,7 +49,7 @@ class _HomeState extends State<HomeI> {
                 )
             ),
             ListTile(
-              leading: Icon(Icons.account_circle),
+              leading: Icon(Icons.qr_code_scanner_outlined),
               title: Text('Scanear'),
               onTap: () {
                 Navigator.pushNamed(context, '/scan_code_bar');
@@ -70,14 +70,14 @@ class _HomeState extends State<HomeI> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.list),
+              leading: Icon(Icons.local_convenience_store_rounded),
               title: Text('Almacenes'),
               onTap: () {
                 Navigator.pushNamed(context, '/almacenes');
               },
             ),
             ListTile(
-              leading: Icon(Icons.list),
+              leading: Icon(Icons.category),
               title: Text('Categorías de producto'),
               onTap: () {
                 Navigator.pushNamed(context, '/categorias');

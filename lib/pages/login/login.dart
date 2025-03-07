@@ -157,7 +157,7 @@ class Login extends StatelessWidget {
             context: context
         );
       },
-      child: const Text("Accder"),
+      child: const Text("Acceder"),
     );
   }
 

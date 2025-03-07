@@ -40,7 +40,6 @@ dependencies:
   google_fonts: ^6.2.1
   firebase_auth: ^5.5.1
   fluttertoast: ^8.2.5
-  flutter_launcher_icons: ^0.14.3
   date_field: ^6.0.3+1
   intl: ^0.20.2
 
@@ -48,11 +47,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-flutter_icons:
-  android: "launcher_icon"
-  ios: flase
-  image_path: "android/app/src/main/res/icon_luncher/hola.jpg"
-  adaptive_icon_background: "android/app/src/main/res/icon_luncher/hola.jpg"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
