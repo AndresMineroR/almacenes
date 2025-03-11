@@ -40,6 +40,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
   Widget build(BuildContext context) {
     final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
     uidAlma.text = arguments['uidAlma'];
+    String uidProducto = arguments['uidAlma'];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Producto'),
@@ -50,7 +51,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
           margin: EdgeInsets.all(20.0),
           child: Form(
             key: keyForm,
-            child: formUI(),
+            child: formUI(uidProducto),
           ),
         ),
       ),
@@ -64,7 +65,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
     );
   }
 
-  Widget formUI() {
+  Widget formUI(String uidProducto) {
     return Column(
       children: <Widget>[
         formItemsDesign(
@@ -155,10 +156,10 @@ class _AddProductoPageState extends State<AddProductoPage> {
         GestureDetector(
           onTap: () async {
             await addProducto(
+              uidProducto,
               nomCtrl.text,
               descCtrl.text,
-              int.parse(catCtrl.text),  // Aquí deberías usar el uid de la categoría
-              int.parse(preCtrl.text),
+
               cadCtrl.text,
               ltCtrl.text,
             ).then((_){

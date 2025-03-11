@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
+import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
 
 class Almacenes extends StatefulWidget {
   const Almacenes({
@@ -63,13 +64,30 @@ class _AlmacenesState extends State<Almacenes> {
                           await deleteAlmacen(snapshot.data?[index]['uidAlma']);
                           setState(() {});
                         }
-                      } else if (value == 'agregar'){
-                        await Navigator.pushNamed(context, '/addProducto', arguments:{
-                          "uidAlma": '5jhbuvhbvi'
-                        });
-                        setState(() {});
+                      } else if (value == 'agregar') {
+                        var result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SimpleBarcodeScannerPage(),
+                          ),
+                        );
+
+                        if (result != null && result != "-1") {
+                          // Si el usuario escaneó un código válido, ir a la pantalla de agregar producto
+                          await Navigator.pushNamed(
+                            context,
+                            '/addProducto',
+                            arguments: {
+                              "uidAlma": result.toString(), // Pasar el código escaneado
+
+                            },
+                          );
+                          setState(() {});
+                        }
                       }
+
                     },
+
                     itemBuilder: (BuildContext context) {
                       return [
                         PopupMenuItem<String>(

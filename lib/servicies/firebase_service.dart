@@ -27,16 +27,23 @@ Future<List> getProductos() async{
 }
 
 //función para guardar un producto
-Future<void> addProducto(String nom, String des, int cat, int pre, String cad, String lt) async{
-  await baseInventario.collection('productos').add({
+Future<void> addProducto(String uidProducto, String nom, String des,String cad, String lt) async{
+  try {
+  await baseInventario.collection('productos').doc(uidProducto).set({
     'Nombre': nom,
     'Descripcion': des,
-    'Categoria': cat,
-    'Precio': pre,
+
     'Caducidad': cad,
     'Lote': lt
   });
+  print("Producto agregado con éxito: $uidProducto");
+  } catch (e) {
+    print("Error al agregar producto: $e");
+  }
+
 }
+
+
 //función para actualizar un producto
 Future<void> updateProducto(String uId, String nomNew, String desNew, int catNew, int preNew, String cadNew, String ltNew) async {
   await baseInventario.collection('productos').doc(uId).set({
