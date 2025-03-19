@@ -18,7 +18,9 @@ class _AddProductoPageState extends State<AddProductoPage> {
   TextEditingController preCtrl = TextEditingController(text: '');
   TextEditingController cadCtrl = TextEditingController(text: '');
   TextEditingController ltCtrl = TextEditingController(text: '');
+  TextEditingController cantCtrl = TextEditingController(text: '');
   TextEditingController uidAlma = TextEditingController(text: '');
+  TextEditingController uidProducto = TextEditingController(text: '');
 
   List<dynamic> categorias = [];
   String? selectedCategoria;
@@ -40,7 +42,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
   Widget build(BuildContext context) {
     final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
     uidAlma.text = arguments['uidAlma'];
-    String uidProducto = arguments['uidAlma'];
+    String uidProducto = arguments['uidProducto'];
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Producto'),
@@ -76,7 +78,12 @@ class _AddProductoPageState extends State<AddProductoPage> {
                 labelText: 'Nombre del producto',
               ),
               keyboardType: TextInputType.text,
-              //validator: validateName,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor ingrese la fecha de caducidad';
+                }
+                return null;
+              },
             )),
 
         formItemsDesign(
@@ -153,15 +160,28 @@ class _AddProductoPageState extends State<AddProductoPage> {
               //validator:,
             )),
 
+        formItemsDesign(
+            Icons.numbers,
+            TextFormField(
+              controller: cantCtrl,
+              decoration: InputDecoration(
+                labelText: 'Stock del producto',
+              ),
+              keyboardType: TextInputType.number,
+            )),
+
         GestureDetector(
           onTap: () async {
             await addProducto(
               uidProducto,
               nomCtrl.text,
               descCtrl.text,
-
+              catCtrl.text,
+              preCtrl.text,
               cadCtrl.text,
               ltCtrl.text,
+              uidAlma.text,
+              cantCtrl.text
             ).then((_){
               Navigator.pop(context);
             });

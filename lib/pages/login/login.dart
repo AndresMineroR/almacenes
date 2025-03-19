@@ -20,7 +20,7 @@ class Login extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         toolbarHeight: 100,
-        leading: GestureDetector(
+       /* leading: GestureDetector(
           onTap: () {
             Navigator.pop(context);
           },
@@ -37,7 +37,7 @@ class Login extends StatelessWidget {
               ),
             ),
           ),
-        ),
+        ),*/
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -46,13 +46,24 @@ class Login extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
               Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(35),
+                  child: Image.asset(
+                    'lib/assets/logo.jpg',
+                    height: 100,
+                    fit: BoxFit.cover, // Ajustar cómo se muestra la imagen
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Center(
                 child: Text(
                   'Bienvennido a Invent0taly',
                   style: GoogleFonts.raleway(
                       textStyle: const TextStyle(
                           color: Colors.black,
                           fontWeight: FontWeight.bold,
-                          fontSize: 32
+                          fontSize: 24
                       )
                   ),
                 ),
@@ -76,7 +87,7 @@ class Login extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Dirección de correo',
+          'Correo electrónico',
           style: GoogleFonts.raleway(
               textStyle: const TextStyle(
                   color: Colors.black,

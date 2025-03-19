@@ -78,15 +78,20 @@ class _AlmacenesState extends State<Almacenes> {
                             context,
                             '/addProducto',
                             arguments: {
-                              "uidAlma": result.toString(), // Pasar el código escaneado
-
+                              "uidProducto": result.toString(), // Pasar el código escaneado
+                              'uidAlma': snapshot.data?[index]['uidAlma']
                             },
                           );
                           setState(() {});
                         }
+                      } else if (value == 'listar'){
+                        await Navigator.pushNamed(context, '/productosAlmacen', arguments: {
+                          "uidAlma": snapshot.data?[index]['uidAlma'],
+                        });
+                        setState(() {});
                       }
-
                     },
+
 
                     itemBuilder: (BuildContext context) {
                       return [
@@ -101,6 +106,10 @@ class _AlmacenesState extends State<Almacenes> {
                         PopupMenuItem<String>(
                           value: 'agregar',
                           child: Text('Agregar Productos'),
+                        ),
+                        PopupMenuItem<String>(
+                          value: 'listar',
+                          child: Text('Listar Productos del Almacen'),
                         ),
                       ];
                     },

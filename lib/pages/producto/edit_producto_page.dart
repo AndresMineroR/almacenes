@@ -17,16 +17,44 @@ class _EditProductoPageState extends State<EditProductoPage> {
   TextEditingController cadCtrl = TextEditingController();
   TextEditingController ltCtrl = TextEditingController();
   TextEditingController uid = TextEditingController();
+  TextEditingController uidAlma = TextEditingController();
+  TextEditingController cantCtrl = TextEditingController();
+
+  List<dynamic> categorias = [];
+  String? selectedCategoria;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategorias();
+    Future.microtask((){
+      final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
+      setState((){
+        nomCtrl.text = arguments['Nombre'];
+        descCtrl.text = arguments['Descripcion'];
+        catCtrl.text = arguments['Categoria'];
+        preCtrl.text = arguments['Precio'];
+        cadCtrl.text = arguments['Caducidad'];
+        ltCtrl.text = arguments['Lote'];
+        uid.text = arguments['uid'];
+        uidAlma.text = arguments['UidAlma'];
+        selectedCategoria = arguments['Categoria'];
+        cantCtrl.text = arguments['Stock'];
+
+      });
+    });
+  }
+
+  _loadCategorias() async {
+    var categoriasData = await getCategoriasProducto();
+    setState(() {
+      categorias = categoriasData;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
-    nomCtrl.text = arguments['Nombre'];
-    descCtrl.text = arguments['Descripcion'];
-    catCtrl.text = arguments['Categoria'].toString();
-    preCtrl.text = arguments['Precio'].toString();
-    cadCtrl.text = arguments['Caducidad'];
-    ltCtrl.text = arguments['Lote'];
-    uid.text = arguments['uid'];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Producto'),
@@ -77,15 +105,26 @@ class _EditProductoPageState extends State<EditProductoPage> {
             )),
 
         formItemsDesign(
-            Icons.numbers,
-            TextFormField(
-              controller: catCtrl,
-              decoration: InputDecoration(
-                labelText: 'Categoría del producto',
-              ),
-              keyboardType: TextInputType.number,
-              //validator: validateName(catCtrl),
-            )),
+          Icons.category,
+          categorias.isNotEmpty
+              ? DropdownButtonFormField<String>(
+            value: selectedCategoria,
+            decoration: const InputDecoration(labelText: 'Categoría del producto'),
+            items: categorias.map<DropdownMenuItem<String>>((cat) {
+              return DropdownMenuItem<String>(
+                value: cat['uidCat'], // Aquí usamos el uid como valor
+                child: Text(cat['NombreCat']),
+              );
+            }).toList(),
+            onChanged: (newValue) {
+              setState(() {
+                selectedCategoria = newValue;
+                catCtrl.text = selectedCategoria ?? '';  // Actualizamos el controlador
+              });
+            },
+          )
+              : CircularProgressIndicator(), // Mostrar un cargador mientras no haya categorías
+        ),
 
         formItemsDesign(
             Icons.attach_money,
@@ -98,7 +137,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
             )),
 
         formItemsDesign(
-            Icons.calendar_month,
+            Icons.calendar_today,
             TextFormField(
               controller: cadCtrl,
               decoration: InputDecoration(
@@ -109,7 +148,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
             )),
 
         formItemsDesign(
-            Icons.abc,
+            Icons.text_fields,
             TextFormField(
               controller: ltCtrl,
               decoration: InputDecoration(
@@ -119,16 +158,31 @@ class _EditProductoPageState extends State<EditProductoPage> {
               //validator:,
             )),
 
+        formItemsDesign(
+            Icons.numbers,
+            TextFormField(
+              controller: cantCtrl,
+              decoration: InputDecoration(
+                labelText: 'Stock del producto',
+              ),
+              keyboardType: TextInputType.number,
+            )),
+
         GestureDetector(
             onTap: () async {
+              debugPrint('Categoría seleccionada: $selectedCategoria');
+              debugPrint('Controlador de categoría: ${catCtrl.text}');
+              debugPrint('cantidad de producto: ${cantCtrl.text}');
               await updateProducto(
                   uid.text,
                   nomCtrl.text,
                   descCtrl.text,
-                  int.parse(catCtrl.text),
-                  int.parse(preCtrl.text),
+                  selectedCategoria ?? catCtrl.text,
+                  preCtrl.text,
                   cadCtrl.text,
-                  ltCtrl.text
+                  ltCtrl.text,
+                  cantCtrl.text,
+                  uidAlma.text
               ).then((_){
                 Navigator.pop(context);
               });

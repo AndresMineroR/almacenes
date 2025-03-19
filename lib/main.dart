@@ -5,6 +5,8 @@ import 'package:almacenes/pages/categoria_producto/add_categoria_producto_page.d
 import 'package:almacenes/pages/categoria_producto/categorias_producto_page.dart';
 import 'package:almacenes/pages/categoria_producto/edit_categoria_producto_page.dart';
 import 'package:almacenes/pages/login/login.dart';
+import 'package:almacenes/pages/producto/mostarProducto.dart';
+import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -47,9 +49,11 @@ class MyApp extends StatelessWidget {
         '/productos': (context) => Productos(),
         '/addProducto': (context) => AddProductoPage(),
         '/editProducto': (context) => EditProductoPage(),
+        '/mostrarProducto': (context) => MostrarProducto(),
         '/almacenes': (context) => Almacenes(),
         '/addAlmacen': (context) => AddAlmacenPage(),
         '/editAlmacen': (context) => EditAlmacenPage(),
+        '/productosAlmacen': (context) => ProductosAlmacen(),
         '/categorias': (context) => CategoirasProducto(),
         '/addCategoriaProducto': (context) => AddCategoriaProductoPage(),
         '/editCategoriaProducto': (context) => EditCategoriaProductoPage(),

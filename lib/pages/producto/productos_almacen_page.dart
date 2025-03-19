@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
-class Productos extends StatefulWidget {
-  const Productos({
+class ProductosAlmacen extends StatefulWidget {
+  const ProductosAlmacen({
     super.key,
   });
 
   @override
-  State<Productos> createState() => _ProductosState();
+  State<ProductosAlmacen> createState() => _ProductosAlmacenState();
 }
 
-class _ProductosState extends State<Productos> {
+class _ProductosAlmacenState extends State<ProductosAlmacen> {
+  late String uidAlma;
+  void initState() {
+    super.initState();
+    // Obtén el uidAlma de los argumentos de la ruta
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
+      setState(() {
+        uidAlma = arguments['uidAlma'];
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,7 +30,7 @@ class _ProductosState extends State<Productos> {
         title: const Text('Productos'),
       ),
       body: FutureBuilder(
-          future: getProductos(),
+          future: getProductosAlmacen(uidAlma),
           builder: ((context, snapshot){
             if(snapshot.hasData){
               return ListView.builder(
@@ -26,7 +38,7 @@ class _ProductosState extends State<Productos> {
                 itemBuilder: (context, index){
                   return ListTile(
                       title: Text(snapshot.data?[index]['Nombre']),
-                      /*trailing: PopupMenuButton<String>(
+                      trailing: PopupMenuButton<String>(
                         onSelected: (String value) async{
                           if (value == 'editar') { // Página de edición
                             await Navigator.pushNamed(context, '/editProducto', arguments: {
@@ -35,8 +47,10 @@ class _ProductosState extends State<Productos> {
                               "Categoria": snapshot.data?[index]['Categoria'],
                               "Precio": snapshot.data?[index]['Precio'],
                               "Caducidad": snapshot.data?[index]['Caducidad'],
+                              "Stock": snapshot.data?[index]['Stock'],
                               "Lote": snapshot.data?[index]['Lote'],
                               "uid": snapshot.data?[index]['uid'],
+                              "UidAlma" : snapshot.data?[index]['UidAlma'],
                             });
                             setState(() {});
                           } else if(value == 'eliminar'){
@@ -67,6 +81,16 @@ class _ProductosState extends State<Productos> {
                               await deleteProducto(snapshot.data?[index]['uid']);
                               setState(() {});
                             }
+                          }else if (value == 'mostrar'){
+                            await Navigator.pushNamed(context, '/mostrarProducto', arguments: {
+                              "Nombre": snapshot.data?[index]['Nombre'],
+                              "Descripcion": snapshot.data?[index]['Descripcion'],
+                              "Categoria": snapshot.data?[index]['Categoria'],
+                              "Precio": snapshot.data?[index]['Precio'],
+                              "Caducidad": snapshot.data?[index]['Caducidad'],
+                              "Lote": snapshot.data?[index]['Lote'],
+                              "Stock": snapshot.data?[index]['Stock']
+                            });
                           }
                         },
                         itemBuilder: (BuildContext context) {
@@ -79,11 +103,15 @@ class _ProductosState extends State<Productos> {
                               value: 'eliminar',
                               child: Text('Eliminar'),
                             ),
+                            PopupMenuItem<String>(
+                              value: 'mostrar',
+                              child: Text('Mostrar'),
+                            ),
                           ];
                         },
-                      ),*/
-                      onTap: (() async {
-                        await Navigator.pushNamed(context, '/mostrarProducto', arguments: {
+                      ),
+                      /*onTap: (() async {
+                        await Navigator.pushNamed(context, '/editProducto', arguments: {
                           "Nombre": snapshot.data?[index]['Nombre'],
                           "Descripcion": snapshot.data?[index]['Descripcion'],
                           "Categoria": snapshot.data?[index]['Categoria'],
@@ -93,7 +121,7 @@ class _ProductosState extends State<Productos> {
                           "uid": snapshot.data?[index]['uid'],
                         });
                         setState(() {});
-                      })
+                      })*/
                   );
                 },);
             }
