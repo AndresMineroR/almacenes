@@ -10,12 +10,56 @@ class HomeI extends StatefulWidget {
   State<HomeI> createState() => _HomeState();
 }
 class _HomeState extends State<HomeI> {
+  String? uidAlmacenSeleccionado;
+  String? nombreAlmacen;
+
+  @override
+  void initState() {
+    super.initState();
+    _seleccionarAlmacen();
+  }
+
+  Future<void> _seleccionarAlmacen() async {
+    List almacenes = await getAlmacenes();
+
+    if (almacenes.isNotEmpty) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text("Selecciona un almacén"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: almacenes.map((almacen) {
+                return ListTile(
+                  title: Text(almacen['NombreAlma'] ?? 'Sin nombre'),
+                  onTap: () {
+                    setState(() {
+                      uidAlmacenSeleccionado = almacen['uidAlma'] ?? ''; // Evitar Null
+                      nombreAlmacen = almacen['NombreAlma'] ?? 'Desconocido'; // Evitar Null
+                    });
+                    Navigator.pop(context);
+                  },
+                );
+              }).toList(),
+            ),
+          );
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No hay almacenes disponibles")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.nearlyWhite,
       appBar: AppBar(
-        title: const Text('Bienvenido ',
+        title:  Text('Bienvenido $nombreAlmacen ',
           style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold),
@@ -47,6 +91,22 @@ class _HomeState extends State<HomeI> {
                       ),
                     ]
                 )
+            ),
+            ListTile(
+              leading: const Icon(Icons.point_of_sale),
+              title: const Text('Venta'),
+              onTap: () {
+                if (uidAlmacenSeleccionado != null) {
+                  Navigator.pushNamed(context, '/venta', arguments: {
+                    'uidAlmacen': uidAlmacenSeleccionado,
+                    'nombreAlmacen': nombreAlmacen,
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Selecciona un almacén primero")),
+                  );
+                }
+              },
             ),
             ListTile(
               leading: Icon(Icons.qr_code_scanner_outlined),
