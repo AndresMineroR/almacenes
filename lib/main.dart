@@ -8,6 +8,7 @@ import 'package:almacenes/pages/login/login.dart';
 import 'package:almacenes/pages/producto/mostarProducto.dart';
 import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
+import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:almacenes/config/theme/app_theme.dart';
@@ -39,10 +40,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: AppTheme( selectedColor: 6).theme(),
-    title: 'MaterialApp',
-    initialRoute: '/',
-    routes: {
+      theme: AppTheme(selectedColor: 6).theme(),
+      title: 'MaterialApp',
+      initialRoute: '/',
+      routes: {
         '/': (context) => Login(),
         '/scan_code_bar': (context) => ScanCode(),
         '/perfil': (context) => Perfil(),
@@ -57,7 +58,30 @@ class MyApp extends StatelessWidget {
         '/categorias': (context) => CategoirasProducto(),
         '/addCategoriaProducto': (context) => AddCategoriaProductoPage(),
         '/editCategoriaProducto': (context) => EditCategoriaProductoPage(),
-    },
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/venta') {
+          final args = settings.arguments as Map<String, dynamic>?;
+
+          if (args == null || !args.containsKey('uidAlmacen') ||
+              !args.containsKey('nombreAlmacen')) {
+            return MaterialPageRoute(builder: (context) =>
+                Scaffold(
+                  appBar: AppBar(title: Text("Error")),
+                  body: Center(child: Text("Faltan argumentos para /venta")),
+                ));
+          }
+
+          return MaterialPageRoute(
+            builder: (context) =>
+                VentaPage(
+                  uidAlmacen: args['uidAlmacen'],
+                  nombreAlmacen: args['nombreAlmacen'],
+                ),
+          );
+        }
+        return null;
+      },
     );
   }
 }
