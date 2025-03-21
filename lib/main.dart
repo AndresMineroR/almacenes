@@ -8,7 +8,6 @@ import 'package:almacenes/pages/login/login.dart';
 import 'package:almacenes/pages/producto/mostar_producto_page.dart';
 import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
-import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:almacenes/config/theme/app_theme.dart';
@@ -72,13 +71,13 @@ class MyApp extends StatelessWidget {
                 ));
           }
 
-          return MaterialPageRoute(
+          /*return MaterialPageRoute(
             builder: (context) =>
                 VentaPage(
                   uidAlmacen: args['uidAlmacen'],
                   nombreAlmacen: args['nombreAlmacen'],
                 ),
-          );
+          );*/
         }
         return null;
       },
