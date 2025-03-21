@@ -59,7 +59,7 @@ class _HomeState extends State<HomeI> {
     return Scaffold(
       backgroundColor: AppTheme.nearlyWhite,
       appBar: AppBar(
-        title:  Text('Bienvenido $nombreAlmacen ',
+        title:  Text('Bienvenido - ${nombreAlmacen ?? "..." } ',
           style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold),

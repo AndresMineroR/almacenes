@@ -2,12 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 
 FirebaseFirestore baseInventario = FirebaseFirestore.instance;
-
+FirebaseFirestore baseInventarioP = FirebaseFirestore.instance;
 //función para traer los productos
+
+
 Future<List> getProductos() async{
   List productos = [];
   try{
-    QuerySnapshot queryProduct = await baseInventario.collection('productos').get();
+    QuerySnapshot queryProduct = await baseInventarioP.collection('productos').get();
     for (var doc in queryProduct.docs) {
       final Map< String, dynamic> data = doc.data() as Map< String, dynamic>;
       final pro = {
@@ -27,6 +29,7 @@ Future<List> getProductos() async{
   }
   return productos;
 }
+
 //función para traer los productos de un almacen
 Future<List> getProductosAlmacen(String uidAlma) async{
   List productos = [];
