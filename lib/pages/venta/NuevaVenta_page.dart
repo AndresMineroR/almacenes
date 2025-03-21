@@ -33,67 +33,20 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
   }
 
   Future<void> verificarProducto(String codigo) async {
-    print("📌 Código escaneado: $codigo");
-    print("📌 UID Almacén: ${widget.uidAlmacen}");
 
-    try {
-      var productoDoc = await baseInventarioP.collection('productos').doc(codigo).get();
 
-      if (productoDoc.exists) {
-        var producto = productoDoc.data();
-        print("✅ Producto encontrado: $producto");
-
-        // Validar si el producto pertenece al almacén correcto
-        if (producto?['UidAlma'] == widget.uidAlmacen) {
           setState(() {
-            int index = productos.indexWhere((p) => p['codigo'] == codigo);
-            if (index != -1) {
-              productos[index]['cantidad'] += 1;
-              print("🔄 Se aumentó la cantidad del producto existente.");
-            } else {
-
-              // Convertir precio correctamente
-              double precio = 0.0;
-              if (producto?['Precio'] is num) {
-                precio = (producto?['Precio'] as num).toDouble();
-              } else if (producto?['Precio'] is String) {
-                precio = double.tryParse(producto?['Precio']) ?? 0.0;
-              }
-
-              // Convertir stock correctamente
-              int stock = 0;
-              if (producto?['Stock'] is num) {
-                stock = (producto?['Stock'] as num).toInt();
-              } else if (producto?['Stock'] is String) {
-                stock = int.tryParse(producto?['Stock']) ?? 0;
-              }
-
               productos.add({
                 "codigo": codigo,
-                "nombre": producto?['Nombre'] ?? "Desconocido",
-                "precio": precio,
                 "cantidad": 1,
-                "stock": stock,
               });
-              print("🆕 Producto agregado a la lista.");
-            }
             _calcularTotales();
           });
         } else {
-          print("⚠️ Producto encontrado, pero no pertenece a este almacén.");
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Este producto no pertenece a este almacén.")),
-          );
-        }
-      } else {
-        print("❌ Producto no encontrado en Firestore.");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Producto no encontrado en este almacén")),
         );
       }
-    } catch (e) {
-      print("⚠️ Error en la consulta de Firestore: $e");
-    }
   }
 
 
@@ -120,52 +73,16 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
   }
 
   Future<void> finalizarVenta() async {
-    try {
-      var batch = baseInventario.batch(); // Crear un batch para actualizar múltiples documentos
-
       for (var producto in productos) {
         String codigo = producto['codigo'];
         int cantidadVendida = producto['cantidad'];
 
-        // Obtener el producto directamente desde Firestore
-        var productoDoc = await baseInventario.collection('productos').doc(codigo).get();
-
-        if (!productoDoc.exists) {
-          print("❌ Producto con código $codigo no encontrado en la base de datos.");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("El producto ${producto['nombre']} no existe en Firestore.")),
-          );
-          return;
-        }
-
-        var productoData = productoDoc.data();
-        int stockActual = 0;
-
-        // Convertir el stock a número seguro
-        if (productoData?['Stock'] is num) {
-          stockActual = (productoData?['Stock'] as num).toInt();
-        } else if (productoData?['Stock'] is String) {
-          stockActual = int.tryParse(productoData?['Stock']) ?? 0;
-        }
-
-        print("📦 Producto: ${producto['nombre']} | Stock actual: $stockActual | Vendiendo: $cantidadVendida");
-
         if (stockActual >= cantidadVendida) {
-          batch.update(
-            baseInventario.collection('productos').doc(codigo),
-            {'Stock': stockActual - cantidadVendida}, // Restar el stock vendido
-          );
         } else {
-          print("⚠️ Stock insuficiente para ${producto['nombre']}");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("No hay suficiente stock para ${producto['nombre']}")),
           );
-          return; // No continuar si un producto no tiene stock suficiente
         }
       }
-
-      // Aplicar todas las actualizaciones en lote
-      await batch.commit();
 
       setState(() {
         productos.clear();
@@ -173,18 +90,11 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
         totalProductos = 0;
       });
 
-      print("✅ Venta finalizada y stock actualizado.");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Venta finalizada y stock actualizado")),
       );
 
       Navigator.pop(context); // Regresar a la pantalla anterior
-    } catch (e) {
-      print("⚠️ Error en la finalización de la venta: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al finalizar la venta: $e")),
-      );
-    }
   }
 
 
