@@ -17,6 +17,7 @@ Future<List> getProductos() async{
         "Precio": data['Precio'],
         "Caducidad": data['Caducidad'],
         "Lote": data['Lote'],
+        "Stock": data['Stock'],
         "uid": doc.id,
       };
       productos.add(pro);
@@ -202,3 +203,4 @@ Future<String?> obtenerNombreCategoria(String categoriaId) async {
   }
   return nombreCategoria;
 }
+

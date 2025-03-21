@@ -5,7 +5,7 @@ import 'package:almacenes/pages/categoria_producto/add_categoria_producto_page.d
 import 'package:almacenes/pages/categoria_producto/categorias_producto_page.dart';
 import 'package:almacenes/pages/categoria_producto/edit_categoria_producto_page.dart';
 import 'package:almacenes/pages/login/login.dart';
-import 'package:almacenes/pages/producto/mostarProducto.dart';
+import 'package:almacenes/pages/producto/mostar_producto_page.dart';
 import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
 import 'package:flutter/material.dart';

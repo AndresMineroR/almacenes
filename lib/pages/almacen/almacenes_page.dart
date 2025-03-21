@@ -26,102 +26,124 @@ class _AlmacenesState extends State<Almacenes> {
               itemCount: snapshot.data?.length,
               itemBuilder: (context, index) {
                 return ListTile(
-                  title: Text(snapshot.data?[index]['NombreAlma']),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (String value) async {
-                      if (value == 'editar') { // Página de edición
-                        await Navigator.pushNamed(context, '/editAlmacen', arguments: {
-                          "NombreAlma": snapshot.data?[index]['NombreAlma'],
-                          "DescripcionAlma": snapshot.data?[index]['DescripcionAlma'],
-                          "uidAlma": snapshot.data?[index]['uidAlma'],
-                        });
-                        setState(() {});
-                      } else if (value == 'eliminar') {
-                        bool confirmDelete = await showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: Text('Confirmar eliminación'),
-                              content: Text('¿Estás seguro de que deseas eliminar este elemento?'),
-                              actions: <Widget>[
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(false);
-                                  },
-                                  child: Text('Cancelar'),
+                  title: Card(
+                    elevation: 5,
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Almacen/Tienda',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color.fromARGB(255, 206, 148, 148),
+                                  ),
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(true);
-                                  },
-                                  child: Text('Eliminar'),
+                                Text(
+                                  'Nombre: ' + snapshot.data?[index]['NombreAlma'] + '\n' +
+                                      'Descripción: ' + snapshot.data?[index]['DescripcionAlma'],
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.black87,
+                                  ),
                                 ),
                               ],
-                            );
-                          },
-                        );
-                        if (confirmDelete == true) {
-                          await deleteAlmacen(snapshot.data?[index]['uidAlma']);
-                          setState(() {});
-                        }
-                      } else if (value == 'agregar') {
-                        var result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SimpleBarcodeScannerPage(),
+                            ),
                           ),
-                        );
+                          PopupMenuButton<String>(
+                            onSelected: (String value) async {
+                              if (value == 'editar') {
+                                await Navigator.pushNamed(context, '/editAlmacen', arguments: {
+                                  "NombreAlma": snapshot.data?[index]['NombreAlma'],
+                                  "DescripcionAlma": snapshot.data?[index]['DescripcionAlma'],
+                                  "uidAlma": snapshot.data?[index]['uidAlma'],
+                                });
+                                setState(() {});
+                              } else if (value == 'eliminar') {
+                                bool confirmDelete = await showDialog(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return AlertDialog(
+                                      title: Text('Confirmar eliminación'),
+                                      content: Text('¿Estás seguro de que deseas eliminar este elemento?'),
+                                      actions: <Widget>[
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop(false);
+                                          },
+                                          child: Text('Cancelar'),
+                                        ),
+                                        TextButton(
+                                          onPressed: () {
+                                            Navigator.of(context).pop(true);
+                                          },
+                                          child: Text('Eliminar'),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                );
+                                if (confirmDelete == true) {
+                                  await deleteAlmacen(snapshot.data?[index]['uidAlma']);
+                                  setState(() {});
+                                }
+                              } /*else if (value == 'agregar') {
+                                var result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SimpleBarcodeScannerPage(),
+                                  ),
+                                );
 
-                        if (result != null && result != "-1") {
-                          // Si el usuario escaneó un código válido, ir a la pantalla de agregar producto
-                          await Navigator.pushNamed(
-                            context,
-                            '/addProducto',
-                            arguments: {
-                              "uidProducto": result.toString(), // Pasar el código escaneado
-                              'uidAlma': snapshot.data?[index]['uidAlma']
+                                if (result != null && result != "-1") {
+                                  await Navigator.pushNamed(
+                                    context,
+                                    '/addProducto',
+                                    arguments: {
+                                      "uidProducto": result.toString(),
+                                      'uidAlma': snapshot.data?[index]['uidAlma']
+                                    },
+                                  );
+                                  setState(() {});
+                                }
+                              }*/
                             },
-                          );
-                          setState(() {});
-                        }
-                      } else if (value == 'listar'){
-                        await Navigator.pushNamed(context, '/productosAlmacen', arguments: {
-                          "uidAlma": snapshot.data?[index]['uidAlma'],
-                        });
-                        setState(() {});
-                      }
-                    },
-
-
-                    itemBuilder: (BuildContext context) {
-                      return [
-                        PopupMenuItem<String>(
-                          value: 'editar',
-                          child: Text('Editar'),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'eliminar',
-                          child: Text('Eliminar'),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'agregar',
-                          child: Text('Agregar Productos'),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'listar',
-                          child: Text('Listar Productos del Almacen'),
-                        ),
-                      ];
-                    },
+                            itemBuilder: (BuildContext context) {
+                              return [
+                                PopupMenuItem<String>(
+                                  value: 'editar',
+                                  child: Text('Editar'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'eliminar',
+                                  child: Text('Eliminar'),
+                                ),/*
+                                PopupMenuItem<String>(
+                                  value: 'agregar',
+                                  child: Text('Agregar Productos'),
+                                ),*/
+                              ];
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  /*onTap: () async {
-                    await Navigator.pushNamed(context, '/editAlmacen', arguments: {
-                      "NombreAlma": snapshot.data?[index]['NombreAlma'],
-                      "DescripcionAlma": snapshot.data?[index]['DescripcionAlma'],
+                  onTap: () async {
+                    await Navigator.pushNamed(context, '/productosAlmacen', arguments: {
                       "uidAlma": snapshot.data?[index]['uidAlma'],
+                      "nombreAlma": snapshot.data?[index]['NombreAlma']
                     });
-                    setState(() {});
-                  },*/
+                  },
                 );
               },
             );

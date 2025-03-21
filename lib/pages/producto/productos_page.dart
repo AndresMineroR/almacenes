@@ -25,75 +25,56 @@ class _ProductosState extends State<Productos> {
                 itemCount: snapshot.data?.length,
                 itemBuilder: (context, index){
                   return ListTile(
-                      title: Text(snapshot.data?[index]['Nombre']),
-                      /*trailing: PopupMenuButton<String>(
-                        onSelected: (String value) async{
-                          if (value == 'editar') { // Página de edición
-                            await Navigator.pushNamed(context, '/editProducto', arguments: {
-                              "Nombre": snapshot.data?[index]['Nombre'],
-                              "Descripcion": snapshot.data?[index]['Descripcion'],
-                              "Categoria": snapshot.data?[index]['Categoria'],
-                              "Precio": snapshot.data?[index]['Precio'],
-                              "Caducidad": snapshot.data?[index]['Caducidad'],
-                              "Lote": snapshot.data?[index]['Lote'],
-                              "uid": snapshot.data?[index]['uid'],
-                            });
-                            setState(() {});
-                          } else if(value == 'eliminar'){
-                            bool confirmDelete = await showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text('Confirmar eliminación'),
-                                  content: Text('¿Estás seguro de que deseas eliminar este elemento?'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(false);
-                                      },
-                                      child: Text('Cancelar'),
+                    title: Card(
+                      elevation: 5,
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Producto',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color.fromARGB(255, 206, 148, 148),
                                     ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop(true);
-                                      },
-                                      child: Text('Eliminar'),
+                                  ),
+                                  Text(
+                                    'Nombre: '+snapshot.data?[index]['Nombre']+'\n'+
+                                    'Descripción: '+snapshot.data?[index]['Descripcion']+'\n'+
+                                    'Stock: '+snapshot.data?[index]['Stock'],
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.black87,
                                     ),
-                                  ],
-                                );
-                              },
-                            );
-                            if (confirmDelete == true) {
-                              await deleteProducto(snapshot.data?[index]['uid']);
-                              setState(() {});
-                            }
-                          }
-                        },
-                        itemBuilder: (BuildContext context) {
-                          return [
-                            PopupMenuItem<String>(
-                              value: 'editar',
-                              child: Text('Editar'),
+                                  ),
+                                ],
+                              ),
                             ),
-                            PopupMenuItem<String>(
-                              value: 'eliminar',
-                              child: Text('Eliminar'),
-                            ),
-                          ];
-                        },
-                      ),*/
-                      onTap: (() async {
-                        await Navigator.pushNamed(context, '/mostrarProducto', arguments: {
-                          "Nombre": snapshot.data?[index]['Nombre'],
-                          "Descripcion": snapshot.data?[index]['Descripcion'],
-                          "Categoria": snapshot.data?[index]['Categoria'],
-                          "Precio": snapshot.data?[index]['Precio'],
-                          "Caducidad": snapshot.data?[index]['Caducidad'],
-                          "Lote": snapshot.data?[index]['Lote'],
-                          "uid": snapshot.data?[index]['uid'],
-                        });
-                        setState(() {});
-                      })
+                          ],
+                        ),
+                      ),
+                    ),
+                    onTap: (() async {
+                      await Navigator.pushNamed(context, '/mostrarProducto', arguments: {
+                        "Nombre": snapshot.data?[index]['Nombre'],
+                        "Descripcion": snapshot.data?[index]['Descripcion'],
+                        "Categoria": snapshot.data?[index]['Categoria'],
+                        "Precio": snapshot.data?[index]['Precio'],
+                        "Caducidad": snapshot.data?[index]['Caducidad'],
+                        "Lote": snapshot.data?[index]['Lote'],
+                        "Stock": snapshot.data?[index]['Stock']
+                      });
+                      setState(() {});
+                    }),
                   );
                 },);
             }
