@@ -152,7 +152,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
         if (stockActual >= cantidadVendida) {
           batch.update(
             baseInventario.collection('productos').doc(codigo),
-            {'Stock': stockActual - cantidadVendida}, // Restar el stock vendido
+            {'Stock': ((stockActual - cantidadVendida)).toString()}, // Restar el stock vendido
           );
         } else {
           print("⚠️ Stock insuficiente para ${producto['nombre']}");
