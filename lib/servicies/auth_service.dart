@@ -106,7 +106,6 @@ class AuthService {
         message = 'El formato del correo es inválido.';
       } else if (e.code == 'invalid-password') {
         message = 'La contraseña proporcionada es incorrecta.';
->>>>>>> Stashed changes
       }
 
       // Mostrar mensaje de error con Toast
@@ -130,21 +129,6 @@ class AuthService {
         fontSize: 14.0,
       );
     }
-<<<<<<< Updated upstream
-=======
-    catch(e){
-      Fluttertoast.showToast(
-        msg: 'Ocurrió un error. Por favor, inténtalo de nuevo.',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.SNACKBAR,
-        backgroundColor: Colors.black54,
-        textColor: Colors.white,
-        fontSize: 14.0,
-      );
-      print('Error no manejado: $e');
-    }
-
->>>>>>> Stashed changes
   }
 
 
