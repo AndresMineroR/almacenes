@@ -97,19 +97,6 @@ class AuthService {
         MaterialPageRoute(builder: (BuildContext context) => const HomeI()),
       );
 
-<<<<<<< Updated upstream
-    } on FirebaseAuthException catch (e) {
-      // Cerrar el diálogo de carga en caso de error
-      Navigator.pop(context);
-
-      String message = '';
-      if (e.code == 'user-not-found') {
-        message = 'No se encontró un usuario con ese correo.';
-      } else if (e.code == 'wrong-password') {
-        message = 'La contraseña proporcionada es incorrecta.';
-      } else {
-        message = 'Error al iniciar sesión.';
-=======
     } on FirebaseAuthException catch(e) {
       print('FirebaseAuthException código: ${e.code}');
       String message = 'Ambos campos son necesarios';
