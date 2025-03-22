@@ -58,7 +58,7 @@ class Login extends StatelessWidget {
               const SizedBox(height: 20),
               Center(
                 child: Text(
-                  'Bienvennido a Invent0taly',
+                  'Bienvenido a Invent0taly',
                   style: GoogleFonts.raleway(
                       textStyle: const TextStyle(
                           color: Colors.black,
