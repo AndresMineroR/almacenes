@@ -45,6 +45,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => Login(),
+        '/venta': (context) => VentaPage(),
         '/scan_code_bar': (context) => ScanCode(),
         '/perfil': (context) => Perfil(),
         '/productos': (context) => Productos(),
@@ -59,29 +60,29 @@ class MyApp extends StatelessWidget {
         '/addCategoriaProducto': (context) => AddCategoriaProductoPage(),
         '/editCategoriaProducto': (context) => EditCategoriaProductoPage(),
       },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/venta') {
-          final args = settings.arguments as Map<String, dynamic>?;
+     // onGenerateRoute: (settings) {
+        // if (settings.name == '/venta') {
+        //final args = settings.arguments as Map<String, dynamic>?;
 
-          if (args == null || !args.containsKey('uidAlmacen') ||
-              !args.containsKey('nombreAlmacen')) {
-            return MaterialPageRoute(builder: (context) =>
-                Scaffold(
-                  appBar: AppBar(title: Text("Error")),
-                  body: Center(child: Text("Faltan argumentos para /venta")),
-                ));
-          }
-
-          return MaterialPageRoute(
-            builder: (context) =>
-                VentaPage(
-                  uidAlmacen: args['uidAlmacen'],
-                  nombreAlmacen: args['nombreAlmacen'],
-                ),
-          );
-        }
-        return null;
-      },
+        //if (args == null || !args.containsKey('uidAlmacen') ||
+        //    !args.containsKey('nombreAlmacen')) {
+        //  return MaterialPageRoute(builder: (context) =>
+      //      Scaffold(
+      //          appBar: AppBar(title: Text("Error")),
+      //          body: Center(child: Text("Faltan argumentos para /venta")),
+    //        ));
+        //    }
+//
+      //        return MaterialPageRoute(
+      //    builder: (context) =>
+      //        VentaPage(
+      //          uidAlmacen: args['uidAlmacen'],
+      //          nombreAlmacen: args['nombreAlmacen'],
+      //        ),
+    //  );
+    //  }
+    //  return null;
+      //},
     );
   }
 }
