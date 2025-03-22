@@ -25,7 +25,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
       final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
       setState(() {
         uidAlma = arguments['uidAlma'];
-        nombreAlma = arguments['nombreAlma'];
+        nombreAlma = arguments['NombreAlma'];
       });
       await cargarCategorias();
       setState(() {
@@ -113,12 +113,8 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                                         ),
                                       ),
                                       Text(
-                                        'Nombre: ' +
-                                            productos?[index]['Nombre'] +
-                                            '\nDescripción: ' +
-                                            productos?[index]['Descripcion'] +
-                                            '\nStock: ' +
-                                            productos?[index]['Stock'],
+                                        'Descripción: ' + productos?[index]['Descripcion'] +
+                                        '\nStock: ' + productos?[index]['Stock'],
                                         style: TextStyle(
                                           fontSize: 16,
                                           color: Colors.black87,

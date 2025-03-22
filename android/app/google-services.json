@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "378760610898",
+    "project_id": "inventarioabarrotes-935f9",
+    "storage_bucket": "inventarioabarrotes-935f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:378760610898:android:bbad022394458135400b8b",
+        "android_client_info": {
+          "package_name": "com.example.inventario_abarrotes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "378760610898-vc8prmi3dk9jkc34ak4d31h3epli1q4f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlzmnokIyiFZSTPehKSY95jgj7bou7Yps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "378760610898-vc8prmi3dk9jkc34ak4d31h3epli1q4f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "378760610898-3g6k0lt9akltsflld8qfm82cr6jo2h4i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.inventarioAbarrotes"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

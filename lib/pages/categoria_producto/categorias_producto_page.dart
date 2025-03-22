@@ -39,7 +39,7 @@ class _CategoirasProductoState extends State<CategoirasProducto> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Categoría',
+                                  snapshot.data?[index]['NombreCat'],
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -47,8 +47,7 @@ class _CategoirasProductoState extends State<CategoirasProducto> {
                                   ),
                                 ),
                                 Text(
-                                      'Nombre: ' + snapshot.data?[index]['NombreCat'] + '\n' +
-                                      'Descripción: ' + snapshot.data?[index]['DescripcionCat'],
+                                  'Descripción: ' + snapshot.data?[index]['DescripcionCat'],
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.black87,

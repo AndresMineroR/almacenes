@@ -41,7 +41,7 @@ class _AlmacenesState extends State<Almacenes> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Almacen/Tienda',
+                                  snapshot.data?[index]['NombreAlma'],
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -49,8 +49,7 @@ class _AlmacenesState extends State<Almacenes> {
                                   ),
                                 ),
                                 Text(
-                                  'Nombre: ' + snapshot.data?[index]['NombreAlma'] + '\n' +
-                                      'Descripción: ' + snapshot.data?[index]['DescripcionAlma'],
+                                  'Descripción: ' + snapshot.data?[index]['DescripcionAlma'],
                                   style: TextStyle(
                                     fontSize: 16,
                                     color: Colors.black87,
@@ -141,7 +140,7 @@ class _AlmacenesState extends State<Almacenes> {
                   onTap: () async {
                     await Navigator.pushNamed(context, '/productosAlmacen', arguments: {
                       "uidAlma": snapshot.data?[index]['uidAlma'],
-                      "nombreAlma": snapshot.data?[index]['NombreAlma']
+                      "NombreAlma": snapshot.data?[index]['NombreAlma']
                     });
                   },
                 );

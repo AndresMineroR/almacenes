@@ -113,6 +113,7 @@ class Login extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14)
               )
           ),
+          keyboardType: TextInputType.emailAddress,
         )
       ],
     );

@@ -40,7 +40,7 @@ class _ProductosState extends State<Productos> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Producto',
+                                    snapshot.data?[index]['Nombre'],
                                     style: TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -48,7 +48,6 @@ class _ProductosState extends State<Productos> {
                                     ),
                                   ),
                                   Text(
-                                    'Nombre: '+snapshot.data?[index]['Nombre']+'\n'+
                                     'Descripción: '+snapshot.data?[index]['Descripcion']+'\n'+
                                     'Stock: '+snapshot.data?[index]['Stock'],
                                     style: TextStyle(
