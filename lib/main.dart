@@ -22,6 +22,8 @@ import 'package:almacenes/pages/profile_page.dart';
 import 'firebase_options.dart';
 import 'package:intl/intl_standalone.dart' if (dart.library.html) 'package:intl/intl_browser.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 
 void main() async {
@@ -31,6 +33,9 @@ void main() async {
   );
   await findSystemLocale();
   await initializeDateFormatting();
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.playIntegrity,
+  );
   runApp(const MyApp());
 }
 
