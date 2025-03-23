@@ -7,10 +7,10 @@ class NuevaVentaPage extends StatefulWidget {
   final String nombreAlmacen;
 
   const NuevaVentaPage({
-    super.key,
+    Key? key,
     required this.uidAlmacen,
     required this.nombreAlmacen,
-  });
+  }) : super(key: key);
 
   @override
   State<NuevaVentaPage> createState() => _NuevaVentaPageState();
@@ -24,7 +24,9 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
   Future<void> escanearCodigo() async {
     var result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const SimpleBarcodeScannerPage()),
+      MaterialPageRoute(
+        builder: (context) => const SimpleBarcodeScannerPage(),
+      ),
     );
 
     if (result != null) {
@@ -43,7 +45,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
         var producto = productoDoc.data();
         print("✅ Producto encontrado: $producto");
 
-        // Validar si el producto pertenece al almacén correcto
+        // Validar que el producto pertenezca al almacén actual
         if (producto?['UidAlma'] == widget.uidAlmacen) {
           setState(() {
             int index = productos.indexWhere((p) => p['codigo'] == codigo);
@@ -51,7 +53,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
               productos[index]['cantidad'] += 1;
               print("🔄 Se aumentó la cantidad del producto existente.");
             } else {
-              // Convertir precio correctamente
+              // Convertir el precio y el stock
               double precio = 0.0;
               if (producto?['Precio'] is num) {
                 precio = (producto?['Precio'] as num).toDouble();
@@ -59,7 +61,6 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
                 precio = double.tryParse(producto?['Precio']) ?? 0.0;
               }
 
-              // Convertir stock correctamente
               int stock = 0;
               if (producto?['Stock'] is num) {
                 stock = (producto?['Stock'] as num).toInt();
@@ -70,9 +71,9 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
               productos.add({
                 "codigo": codigo,
                 "nombre": producto?['Nombre'] ?? "Desconocido",
-                "precio": precio, // Ahora convertido correctamente
+                "precio": precio,
                 "cantidad": 1,
-                "stock": stock, // Ahora convertido correctamente
+                "stock": stock,
               });
               print("🆕 Producto agregado a la lista.");
             }
@@ -94,7 +95,6 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
       print("⚠️ Error en la consulta de Firestore: $e");
     }
   }
-
 
   void actualizarCantidad(int index, int nuevaCantidad) {
     setState(() {
@@ -119,14 +119,22 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
   }
 
   Future<void> finalizarVenta() async {
+    // Validación: Si no hay productos, mostrar alerta y salir
+    if (productos.isEmpty || totalVenta == 0.0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No hay productos en la venta.")),
+      );
+      return;
+    }
+
     try {
-      var batch = baseInventario.batch(); // Crear un batch para actualizar múltiples documentos
+      // Actualizar el stock de los productos mediante un batch
+      var batch = baseInventario.batch();
 
       for (var producto in productos) {
         String codigo = producto['codigo'];
         int cantidadVendida = producto['cantidad'];
 
-        // Obtener el producto directamente desde Firestore
         var productoDoc = await baseInventario.collection('productos').doc(codigo).get();
 
         if (!productoDoc.exists) {
@@ -139,8 +147,6 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
 
         var productoData = productoDoc.data();
         int stockActual = 0;
-
-        // Convertir el stock a número seguro
         if (productoData?['Stock'] is num) {
           stockActual = (productoData?['Stock'] as num).toInt();
         } else if (productoData?['Stock'] is String) {
@@ -152,19 +158,41 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
         if (stockActual >= cantidadVendida) {
           batch.update(
             baseInventario.collection('productos').doc(codigo),
-            {'Stock': ((stockActual - cantidadVendida)).toString()}, // Restar el stock vendido
+            {'Stock': ((stockActual - cantidadVendida)).toString()},
           );
         } else {
           print("⚠️ Stock insuficiente para ${producto['nombre']}");
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("No hay suficiente stock para ${producto['nombre']}")),
           );
-          return; // No continuar si un producto no tiene stock suficiente
+          return;
         }
       }
 
-      // Aplicar todas las actualizaciones en lote
+      // Ejecutar las actualizaciones en lote
       await batch.commit();
+
+      // Preparar el detalle de productos vendido (array para Firestore)
+      List<Map<String, dynamic>> productosDetalle = productos.map((producto) {
+        return {
+          'codigo': producto['codigo'],
+          'nombre': producto['nombre'],
+          'cantidad': producto['cantidad'],
+          'precioUnitario': producto['precio'],
+          'subtotal': producto['precio'] * producto['cantidad'],
+        };
+      }).toList();
+
+      // Crear la venta en la colección "ventas" con campos extendidos para reportes
+      await baseInventario.collection('ventas').add({
+        'totalVenta': totalVenta,
+        'fecha': DateTime.now(), // Fecha completa: día, hora, minutos y segundos
+        'totalProductos': totalProductos,
+        'productosDetalle': productosDetalle, // Array con el detalle de cada producto
+        'uidAlmacen': widget.uidAlmacen,
+        'nombreAlmacen': widget.nombreAlmacen,
+        // Aquí podrías agregar más campos, como 'metodoPago', 'vendedor', 'descuentos', etc.
+      });
 
       setState(() {
         productos.clear();
@@ -172,12 +200,12 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
         totalProductos = 0;
       });
 
-      print("✅ Venta finalizada y stock actualizado.");
+      print("✅ Venta finalizada, stock actualizado y venta registrada.");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Venta finalizada y stock actualizado")),
+        const SnackBar(content: Text("Venta finalizada, stock actualizado y venta registrada.")),
       );
 
-      Navigator.pop(context); // Regresar a la pantalla anterior
+      Navigator.pop(context);
     } catch (e) {
       print("⚠️ Error en la finalización de la venta: $e");
       ScaffoldMessenger.of(context).showSnackBar(
@@ -191,7 +219,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Nueva Venta - ${widget.nombreAlmacen}"), // ← Corrección aquí
+        title: Text("Nueva Venta - ${widget.nombreAlmacen}"),
       ),
       body: Column(
         children: [
@@ -213,8 +241,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
                         icon: const Icon(Icons.remove),
                         onPressed: () {
                           if (productos[index]['cantidad'] > 1) {
-                            actualizarCantidad(
-                                index, productos[index]['cantidad'] - 1);
+                            actualizarCantidad(index, productos[index]['cantidad'] - 1);
                           }
                         },
                       ),
@@ -222,8 +249,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
                       IconButton(
                         icon: const Icon(Icons.add),
                         onPressed: () {
-                          actualizarCantidad(
-                              index, productos[index]['cantidad'] + 1);
+                          actualizarCantidad(index, productos[index]['cantidad'] + 1);
                         },
                       ),
                     ],
@@ -238,8 +264,7 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
               children: [
                 Text(
                   "Total: \$${totalVenta.toStringAsFixed(2)}",
-                  style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   "Productos escaneados: $totalProductos",
@@ -249,12 +274,13 @@ class _NuevaVentaPageState extends State<NuevaVentaPage> {
                 ElevatedButton(
                   onPressed: finalizarVenta,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 50, vertical: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
                     backgroundColor: Colors.green,
                   ),
-                  child: const Text("Finalizar Venta",
-                      style: TextStyle(fontSize: 18, color: Colors.white)),
+                  child: const Text(
+                    "Finalizar Venta",
+                    style: TextStyle(fontSize: 18, color: Colors.white),
+                  ),
                 ),
               ],
             ),

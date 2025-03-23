@@ -50,8 +50,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _controller =
-        AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
+    _controller = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 2000)
+    );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
     _controller.forward();
   }
@@ -88,8 +90,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      title: const Text('Bienvenido',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+      title: const Text(
+          'Bienvenido',
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
+      ),
     );
   }
 
@@ -110,10 +114,14 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Menú de opciones",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text("Ver más →",
-              style: TextStyle(fontSize: 16, color: Colors.blue)),
+          Text(
+              "Menú de opciones",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
+          ),
+          Text(
+              "Ver más →",
+              style: TextStyle(fontSize: 16, color: Colors.blue)
+          ),
         ],
       ),
     );
@@ -137,8 +145,13 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
 
   Widget _buildMenuItem(Map<String, dynamic> item, int index) {
     return GestureDetector(
-      // Conservamos la navegación original para este elemento
-      onTap: () => _navigateToVenta(context),
+      onTap: () {
+        if (item["route"] == '/venta') {
+          _navigateToVenta(context);
+        } else {
+          Navigator.pushNamed(context, item["route"]);
+        }
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
         decoration: BoxDecoration(
@@ -154,8 +167,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
               child: CircleAvatar(
                 radius: 30,
                 backgroundColor: Colors.white.withOpacity(0.7),
-                child:
-                FaIcon(item["icon"], size: 30, color: item["color"]),
+                child: FaIcon(item["icon"], size: 30, color: item["color"]),
               ),
             ),
             const SizedBox(height: 10),
@@ -182,8 +194,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text("Sección Inferior Adicional",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text(
+              "Sección Inferior Adicional",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
+          ),
         ),
         Container(
           height: 150,
@@ -193,8 +207,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Center(
-            child: Text("Contenido de la sección inferior",
-                style: TextStyle(fontSize: 16)),
+            child: Text(
+                "Contenido de la sección inferior",
+                style: TextStyle(fontSize: 16)
+            ),
           ),
         ),
       ],
@@ -213,7 +229,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           const SizedBox(width: 40),
           IconButton(
             icon: const Icon(Icons.person),
-            // Ahora redirige a la ruta /perfil
             onPressed: () => Navigator.pushNamed(context, '/perfil'),
           ),
         ],
@@ -223,8 +238,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
 
   Widget _buildFloatingActionButton() {
     return FloatingActionButton(
-      // Ahora redirige a la ruta /ventas
-      onPressed: () => Navigator.pushNamed(context, '/venta'),
+      // Se utiliza la misma transición para navegar a VentaPage
+      onPressed: () => _navigateToVenta(context),
       backgroundColor: Colors.blue,
       child: const Icon(Icons.add, size: 26, color: Colors.white),
     );
@@ -235,15 +250,15 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-        const VentaPage(),
+        pageBuilder: (context, animation, secondaryAnimation) => const VentaPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
             child: SlideTransition(
               position: Tween<Offset>(
-                  begin: const Offset(0, 0.5), end: Offset.zero)
-                  .animate(animation),
+                begin: const Offset(0, 0.5),
+                end: Offset.zero,
+              ).animate(animation),
               child: child,
             ),
           );
