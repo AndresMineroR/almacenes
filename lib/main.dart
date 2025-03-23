@@ -9,6 +9,7 @@ import 'package:almacenes/pages/producto/mostar_producto_page.dart';
 import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
 import 'package:almacenes/pages/venta/venta_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:almacenes/config/theme/app_theme.dart';
@@ -42,9 +43,8 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme(selectedColor: 6).theme(),
       title: 'MaterialApp',
-      initialRoute: '/',
+      home: AuthWrapper(), // Usamos AuthWrapper para manejar la sesión
       routes: {
-        '/': (context) => Login(),
         '/venta': (context) => VentaPage(),
         '/scan_code_bar': (context) => ScanCode(),
         '/perfil': (context) => Perfil(),
@@ -59,6 +59,26 @@ class MyApp extends StatelessWidget {
         '/categorias': (context) => CategoirasProducto(),
         '/addCategoriaProducto': (context) => AddCategoriaProductoPage(),
         '/editCategoriaProducto': (context) => EditCategoriaProductoPage(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.active) {
+          User? user = snapshot.data;
+          if (user == null) {
+            return Login(); // Redirige al Login si no hay sesión activa
+          } else {
+            return HomeI(); // Redirige al HomeI si hay sesión activa
+          }
+        }
+        return const Center(child: CircularProgressIndicator()); // Muestra un loading mientras verifica el estado
       },
      // onGenerateRoute: (settings) {
         // if (settings.name == '/venta') {

@@ -1,24 +1,46 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:almacenes/pages/homeI_page.dart';
 import 'package:almacenes/pages/login/login.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
 
   Future<void> signup({
     required String email,
     required String password,
-    required BuildContext context
+    required String nombre,
+    required String numero,
+    required BuildContext context,
+    File? avatarFile
   }) async {
-
     try {
-
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
           email: email,
           password: password
       );
+      String? uid = userCredential.user?.uid;
+      String avatarUrl = '';
+
+      if (avatarFile != null) {
+        final ref = FirebaseStorage.instance.ref().child('avatars').child('$uid.jpg');
+        await ref.putFile(avatarFile);
+        avatarUrl = await ref.getDownloadURL();
+      }else{
+        print('No se seleccionó un archivo para subir.');
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'Nombre': nombre,
+        'Correo': email,
+        'Telefono': numero,
+        'avatarUrl': avatarUrl,
+        'createdAt': FieldValue.serverTimestamp(), // Fecha de creación
+      });
 
       await Future.delayed(const Duration(seconds: 1));
       Navigator.pushReplacement(
@@ -65,10 +87,7 @@ class AuthService {
     required BuildContext context
   }) async {
     try {
-      // Ocultar el teclado antes de iniciar sesión
       FocusScope.of(context).unfocus();
-
-      // Mostrar pantalla de carga
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -78,20 +97,12 @@ class AuthService {
           );
         },
       );
-
-      // Intentar autenticación con Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-
-      // Pequeño delay para mejorar la UX
       await Future.delayed(const Duration(milliseconds: 1200));
-
-      // Cerrar el diálogo de carga
       Navigator.pop(context);
-
-      // Navegar a la pantalla principal
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (BuildContext context) => const HomeI()),
@@ -107,8 +118,6 @@ class AuthService {
       } else if (e.code == 'invalid-password') {
         message = 'La contraseña proporcionada es incorrecta.';
       }
-
-      // Mostrar mensaje de error con Toast
       Fluttertoast.showToast(
         msg: message,
         toastLength: Toast.LENGTH_LONG,
@@ -118,7 +127,6 @@ class AuthService {
         fontSize: 14.0,
       );
     } catch (e) {
-      // Manejar errores generales
       Navigator.pop(context);
       Fluttertoast.showToast(
         msg: "Error inesperado, intenta de nuevo.",
@@ -130,9 +138,6 @@ class AuthService {
       );
     }
   }
-
-
-
 
   Future<void> signout({
     required BuildContext context

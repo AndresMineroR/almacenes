@@ -1,17 +1,6 @@
-buildscript {
-    repositories {
-        google() // Asegúrate de que este repositorio esté configurado
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.2' // Versión de Gradle
-        classpath 'com.google.gms:google-services:4.3.15' // Plugin de servicios de Google
-    }
-}
-
 allprojects {
     repositories {
-        google() // Requerido para Firebase
+        google()
         mavenCentral()
     }
 }
@@ -27,4 +16,3 @@ subprojects {
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }
-

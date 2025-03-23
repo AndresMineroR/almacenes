@@ -1,9 +1,50 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Para obtener más datos del usuario
 import 'package:flutter/material.dart';
+import 'package:almacenes/servicies/auth_service.dart';
 
-class Perfil extends StatelessWidget {
-  final String avatarUrl = 'https://scontent.fmex5-1.fna.fbcdn.net/v/t39.30808-1/463340676_8180933938683107_2949072671352150948_n.jpg?stp=dst-jpg_s160x160_tt6&_nc_cat=108&ccb=1-7&_nc_sid=e99d92&_nc_eui2=AeF1tNzyLluCG0gmeayxrNptlDbEmaP7vCqUNsSZo_u8KqtKc2MTcjSd9JBQYIT6kdASb4dxiW7HHYPp-_fRrHf8&_nc_ohc=LyTXzdmfLYkQ7kNvgF7YdO3&_nc_oc=AdhG53Kh4b3azedtpDti0jdreRdEi9hQQJWh93DBoP1jGreey6UeG5J6oQ-MEv1T2L2SQ0rebBIAXVVPSJ32EsAG&_nc_zt=24&_nc_ht=scontent.fmex5-1.fna&_nc_gid=AaMPBd-VCd2rwhzooJAZ1zf&oh=00_AYBnB5UxWBQYnOXZfFW_T7n4JswtRbpSmC3-9fZdJLRqBQ&oe=67CC56B6';
-  final String nombre = 'Edgar Ortega';
-  final String email = 'edgar220397@gmail.com';
+class Perfil extends StatefulWidget {
+  @override
+  _PerfilState createState() => _PerfilState();
+}
+
+class _PerfilState extends State<Perfil> {
+  String avatarUrl = '';
+  String nombre = '';
+  String email = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData(); // Cargar datos del usuario al iniciar el widget
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // Obtener el correo directamente de FirebaseAuth
+        email = user.email ?? '';
+
+        // Si tienes datos adicionales en Firestore
+        DocumentSnapshot<Map<String, dynamic>> userData = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userData.exists) {
+          setState(() {
+            nombre = userData.data()?['Nombre'] ?? 'Sin nombre'; // Obtiene el campo 'name'
+            avatarUrl = userData.data()?['avatarUrl'] ?? '';  // Obtiene el campo 'avatarUrl'
+          });
+        }
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,23 +58,35 @@ class Perfil extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 50,
-              backgroundImage: NetworkImage(avatarUrl),
+              backgroundImage: avatarUrl.isNotEmpty
+                  ? NetworkImage(avatarUrl) // Muestra el avatar si existe
+                  : null,
+              child: avatarUrl.isEmpty
+                  ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                  : null,
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
-              nombre,
-              style: TextStyle(
+              nombre.isNotEmpty ? nombre : 'Cargando...',
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             Text(
-              email,
+              email.isNotEmpty ? email : 'Cargando...',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
               ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () async {
+                await AuthService().signout(context: context);
+              },
+              child: const Text('Cerrar sesión'),
             ),
           ],
         ),

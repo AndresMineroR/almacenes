@@ -3,9 +3,8 @@ import 'package:flutter/cupertino.dart';
 
 FirebaseFirestore baseInventario = FirebaseFirestore.instance;
 FirebaseFirestore baseInventarioP = FirebaseFirestore.instance;
+
 //función para traer los productos
-
-
 Future<List> getProductos() async{
   List productos = [];
   try{

@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:almacenes/pages/login/login.dart';
 import 'package:almacenes/servicies/auth_service.dart';
 import 'package:flutter/gestures.dart';
@@ -6,9 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 class Signup extends StatelessWidget {
   Signup({super.key});
-
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _numberController = TextEditingController();
+  File? _selectedImage;
 
   @override
   Widget build(BuildContext context) {
@@ -38,17 +42,54 @@ class Signup extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 80,),
+                const SizedBox(height: 40,),
+                _nameField(),
+                const SizedBox(height: 20,),
                 _emailAddress(),
                 const SizedBox(height: 20,),
+                _numberField(),
+                const SizedBox(height: 20,),
                 _password(),
-                const SizedBox(height: 50,),
+                const SizedBox(height: 20,),
+                _avatarPicker(context),
+                const SizedBox(height: 40,),
                 _signup(context),
               ],
             ),
 
           ),
         )
+    );
+  }
+
+  Widget _nameField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nombre',
+          style: GoogleFonts.raleway(
+              textStyle: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.normal,
+                  fontSize: 16)),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _nameController,
+          decoration: InputDecoration(
+              filled: true,
+              hintText: 'Hector Herrera',
+              hintStyle: const TextStyle(
+                  color: Color(0xff6A6A6A),
+                  fontWeight: FontWeight.normal,
+                  fontSize: 14),
+              fillColor: const Color(0xffF7F7F9),
+              border: OutlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(14))),
+        ),
+      ],
     );
   }
 
@@ -121,6 +162,73 @@ class Signup extends StatelessWidget {
     );
   }
 
+  Widget _numberField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Número de Teléfono',
+          style: GoogleFonts.raleway(
+              textStyle: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.normal,
+                  fontSize: 16)),
+        ),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _numberController,
+          keyboardType: TextInputType.phone,
+          decoration: InputDecoration(
+              filled: true,
+              hintText: '+52 123 456 7890',
+              hintStyle: const TextStyle(
+                  color: Color(0xff6A6A6A),
+                  fontWeight: FontWeight.normal,
+                  fontSize: 14),
+              fillColor: const Color(0xffF7F7F9),
+              border: OutlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(14))),
+        ),
+      ],
+    );
+  }
+
+  Widget _avatarPicker(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Imagen del Perfil',
+          style: GoogleFonts.raleway(
+              textStyle: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.normal,
+                  fontSize: 16)),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () async {
+            final ImagePicker picker = ImagePicker();
+            final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+            if (image != null) {
+              _selectedImage = File(image.path);
+              (context as Element).markNeedsBuild(); // Para actualizar el widget y mostrar la imagen
+            }
+          },
+          child: CircleAvatar(
+            radius: 50,
+            backgroundColor: const Color(0xffF7F7F9),
+            backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
+            child: _selectedImage == null
+                ? const Icon(Icons.camera_alt, color: Colors.grey, size: 40)
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _signup(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -133,12 +241,15 @@ class Signup extends StatelessWidget {
       ),
       onPressed: () async {
         await AuthService().signup(
+            nombre: _nameController.text,
             email: _emailController.text,
+            numero:_numberController.text,
             password: _passwordController.text,
+            avatarFile: _selectedImage,
             context: context
         );
       },
-      child: const Text("Sign Up"),
+      child: const Text("Resgistrate"),
     );
   }
 
@@ -150,7 +261,7 @@ class Signup extends StatelessWidget {
           text: TextSpan(
               children: [
                 const TextSpan(
-                  text: "Already Have Account? ",
+                  text: "¿Ya tienes una cuneta? ",
                   style: TextStyle(
                       color: Color(0xff6A6A6A),
                       fontWeight: FontWeight.normal,
@@ -158,7 +269,7 @@ class Signup extends StatelessWidget {
                   ),
                 ),
                 TextSpan(
-                    text: "Log In",
+                    text: "Ingresar",
                     style: const TextStyle(
                         color: Color(0xff1A1D1E),
                         fontWeight: FontWeight.normal,
