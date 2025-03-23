@@ -645,27 +645,145 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildBottomSection() {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text("Sección Inferior Adicional",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        ),
-        Container(
-          height: 150,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Center(
-              child: Text("Contenido de la sección inferior",
-                  style: TextStyle(fontSize: 16))),
-        ),
-      ],
+    if (_selectedAlmacen == null) {
+      return const Center(child: Text('Seleccione un almacén primero'));
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      child: FutureBuilder(
+        future: Future.wait([
+          getProductosMasVendidos(_selectedAlmacen!),
+          getProductosMenorStock(_selectedAlmacen!),
+        ]),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          final masVendidos = snapshot.data![0];
+          final menosStock = snapshot.data![1];
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Text("Reportes del Almacén",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text("Más vendidos",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              SizedBox(
+                height: 80,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    ...masVendidos.take(3).map((prod) => Container(
+                      width: 100,
+                      margin: EdgeInsets.all(5),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("🔥", style: TextStyle(fontSize: 24)),
+                          SizedBox(height: 5),
+                          Text(prod['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
+                        ],
+                      ),
+                    )),
+                    GestureDetector(
+                      onTap: () => _mostrarMas(context, masVendidos, "🔥"),
+                      child: Container(
+                        width: 100,
+                        alignment: Alignment.center,
+                        child: Text("Ver más", style: TextStyle(color: Colors.blue)),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Text("Poco Stock",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
+              SizedBox(
+                height: 80,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    ...menosStock.take(3).map((prod) => Container(
+                      width: 100,
+                      margin: EdgeInsets.all(5),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("⚠️", style: TextStyle(fontSize: 24)),
+                          SizedBox(height: 5),
+                          Text(prod['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
+                        ],
+                      ),
+                    )),
+                    GestureDetector(
+                      onTap: () => _mostrarMas(context, menosStock, "⚠️"),
+                      child: Container(
+                        width: 100,
+                        alignment: Alignment.center,
+                        child: Text("Ver más", style: TextStyle(color: Colors.blue)),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
+
+  void _mostrarMas(BuildContext context, List<Map<String, dynamic>> productos, String emoji) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(10),
+        height: 200,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: productos.length,
+          itemBuilder: (context, index) => Container(
+            width: 120,
+            margin: EdgeInsets.all(5),
+            decoration: BoxDecoration(
+                color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: TextStyle(fontSize: 24)),
+                SizedBox(height: 5),
+                Text(productos[index]['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                SizedBox(height: 5),
+                Text(emoji == "🔥"
+                    ? "${productos[index]['cantidadVendida']} vendidos"
+                    : "Stock: ${productos[index]['stock']}",
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
 
   Widget _buildBottomAppBar() {
     return BottomAppBar(

@@ -4,6 +4,71 @@ import 'package:flutter/cupertino.dart';
 FirebaseFirestore baseInventario = FirebaseFirestore.instance;
 FirebaseFirestore baseInventarioP = FirebaseFirestore.instance;
 
+//producto mas vendido
+Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) async {
+  Map<String, int> ventasPorProducto = {};
+
+  final ventasSnapshot = await FirebaseFirestore.instance
+      .collection('ventas')
+      .where('uidAlmacen', isEqualTo: uidAlmacen)
+      .get();
+
+  for (var ventaDoc in ventasSnapshot.docs) {
+    List productos = ventaDoc.data()['productosDetalle'] ?? [];
+    for (var producto in productos) {
+      String codigo = producto['codigo'];
+      int cantidad = producto['cantidad'];
+      ventasPorProducto[codigo] = (ventasPorProducto[codigo] ?? 0) + cantidad;
+    }
+  }
+
+  // Ordenar de mayor a menor cantidad vendida
+  var sortedEntries = ventasPorProducto.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+
+  List<Map<String, dynamic>> resultado = [];
+  for (var entry in sortedEntries) {
+    // Obtener nombre desde el último documento de venta disponible
+    String nombreProducto = '';
+    for (var ventaDoc in ventasSnapshot.docs) {
+      List productos = ventaDoc.data()['productosDetalle'];
+      var encontrado = productos.firstWhere((p) => p['codigo'] == entry.key, orElse: () => null);
+      if (encontrado != null) {
+        nombreProducto = encontrado['nombre'];
+        break;
+      }
+    }
+    resultado.add({
+      'codigo': entry.key,
+      'nombre': nombreProducto,
+      'cantidadVendida': entry.value,
+    });
+  }
+
+  return resultado;
+}
+
+
+//Producto con menos stock
+
+Future<List<Map<String, dynamic>>> getProductosMenorStock(String uidAlmacen, {int limite = 10}) async {
+  final snapshot = await FirebaseFirestore.instance
+      .collection('productos')
+      .where('UidAlma', isEqualTo: uidAlmacen)
+      .orderBy('Stock', descending: false)
+      .limit(limite)
+      .get();
+
+  return snapshot.docs.map((doc) {
+    return {
+      'nombre': doc['Nombre'],
+      'stock': doc['Stock'],
+    };
+  }).toList();
+}
+
+
+
 //función para traer los productos
 Future<List> getProductos() async{
   List productos = [];
