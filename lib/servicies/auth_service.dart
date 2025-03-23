@@ -15,8 +15,8 @@ class AuthService {
     required String password,
     required String nombre,
     required String numero,
+    File? avatarFile,
     required BuildContext context,
-    File? avatarFile
   }) async {
     try {
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
@@ -24,15 +24,19 @@ class AuthService {
           password: password
       );
       String? uid = userCredential.user?.uid;
-      String avatarUrl = '';
+      String? avatarUrl = '';
 
       if (avatarFile != null) {
-        final ref = FirebaseStorage.instance.ref().child('avatars').child('$uid.jpg');
-        await ref.putFile(avatarFile);
-        avatarUrl = await ref.getDownloadURL();
-      }else{
-        print('No se seleccionó un archivo para subir.');
+        final ref = FirebaseStorage.instance.ref().child('avatars/$uid.jpg');
+        try {
+          await ref.putFile(avatarFile);
+          avatarUrl = await ref.getDownloadURL(); // ✅ Asignar a la variable global
+          print('URL del avatar: $avatarUrl');
+        } catch (e) {
+          print('Error al subir archivo: $e');
+        }
       }
+
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'Nombre': nombre,

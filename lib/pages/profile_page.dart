@@ -12,6 +12,7 @@ class _PerfilState extends State<Perfil> {
   String avatarUrl = '';
   String nombre = '';
   String email = '';
+  String telefono = '';
 
   @override
   void initState() {
@@ -38,6 +39,7 @@ class _PerfilState extends State<Perfil> {
           setState(() {
             nombre = userData.data()?['Nombre'] ?? 'Sin nombre'; // Obtiene el campo 'name'
             avatarUrl = userData.data()?['avatarUrl'] ?? '';  // Obtiene el campo 'avatarUrl'
+            telefono = userData.data()?['Telefono'] ?? 'Sin telefono'; // Obtiene el campo 'name'
           });
         }
       }
@@ -76,6 +78,14 @@ class _PerfilState extends State<Perfil> {
             const SizedBox(height: 10),
             Text(
               email.isNotEmpty ? email : 'Cargando...',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              telefono.isNotEmpty ? telefono : 'Cargando...',
               style: TextStyle(
                 fontSize: 18,
                 color: Colors.grey[600],
