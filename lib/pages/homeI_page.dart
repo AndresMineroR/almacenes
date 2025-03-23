@@ -17,6 +17,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   final PageController _pageController = PageController(viewportFraction: 0.33);
+  int _startHour = 5;
+  int _endHour = 24;
 
   // Para el dropdown de almacenes
   String? _selectedAlmacen;
@@ -62,7 +64,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
+    _animation =
+        CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
     _controller.forward();
   }
 
@@ -109,11 +112,39 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   /// - Un título.
   /// - Un Dropdown para seleccionar el almacén.
   /// - Un conjunto de ChoiceChips para elegir el filtro por día, semana o mes.
+  Widget _buildTimeRangeSelector() {
+    if (_selectedTimeFilter != "day") return Container();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Rango de horas (AM): $_startHour - ${_endHour == 24 ? '12' : _endHour.toString()}",
+          style: const TextStyle(fontSize: 12),
+        ),
+        RangeSlider(
+          min: 0,
+          max: 24,
+          divisions: 24,
+          values: RangeValues(_startHour.toDouble(), _endHour.toDouble()),
+          onChanged: (RangeValues values) {
+            setState(() {
+              _startHour = values.start.round();
+              _endHour = values.end.round();
+            });
+          },
+          labels: RangeLabels(
+            _startHour.toString(),
+            _endHour == 24 ? "12" : _endHour.toString(),
+          ),
+        ),
+      ],
+    );
+  }
   /// - La gráfica de ventas según el filtro.
   Widget _buildTopSection() {
     return Container(
       padding: const EdgeInsets.all(10),
-      height: 350,
+      height: 450,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -125,29 +156,16 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           _buildWarehouseDropdown(),
           const SizedBox(height: 10),
           _buildTimeFilter(),
+          // Mostrar el selector de rango solo cuando el filtro sea "día"
+          _buildTimeRangeSelector(),
           const SizedBox(height: 10),
           Expanded(child: _buildSalesChart()),
-          // Etiquetas explicativas para los ejes
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text("Fecha (día/mes)", style: TextStyle(fontSize: 12)),
-              Text(
-                _selectedTimeFilter == "day"
-                    ? "Total de Ventas  (\$)"
-                    : _selectedTimeFilter == "week"
-                    ? "Total de Ventas  (\$)"
-                    : "Total de Ventas  (\$)",
-                style: const TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-
         ],
       ),
     );
   }
+
+
 
   /// Dropdown para seleccionar el almacén.
   Widget _buildWarehouseDropdown() {
@@ -258,135 +276,295 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
         if (docs.isEmpty) {
           return const Center(child: Text("No hay ventas registradas"));
         }
-        // Agrupar las ventas por día (clave: "día/mes/año")
-        Map<String, double> aggregatedData = {};
-        for (var doc in docs) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          Timestamp ts = data['fecha'];
-          DateTime date = ts.toDate();
-          String key = "${date.day}/${date.month}/${date.year}";
-          double total = 0.0;
-          if (data['totalVenta'] is num) {
-            total = (data['totalVenta'] as num).toDouble();
-          } else if (data['totalVenta'] is String) {
-            total = double.tryParse(data['totalVenta'].toString()) ?? 0.0;
+
+        // Filtro "día": agrupar las ventas por hora usando el rango seleccionado
+        if (_selectedTimeFilter == "day") {
+          // Crear una lista de ventas individuales que ocurren dentro del rango seleccionado
+          List<Map<String, dynamic>> salesList = [];
+          for (var doc in docs) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            Timestamp ts = data['fecha'];
+            DateTime saleDate = ts.toDate();
+            // Solo consideramos ventas dentro del rango seleccionado (_startHour a _endHour)
+            if (saleDate.hour >= _startHour && saleDate.hour <= _endHour) {
+              double saleTotal = 0.0;
+              if (data['totalVenta'] is num) {
+                saleTotal = (data['totalVenta'] as num).toDouble();
+              } else if (data['totalVenta'] is String) {
+                saleTotal = double.tryParse(data['totalVenta'].toString()) ?? 0.0;
+              }
+              salesList.add({
+                'date': saleDate,
+                'total': saleTotal,
+              });
+            }
           }
-          aggregatedData[key] = (aggregatedData[key] ?? 0) + total;
-        }
 
-        // Ordenar las claves (fechas) de forma ascendente
-        List<String> sortedKeys = aggregatedData.keys.toList();
-        sortedKeys.sort((a, b) {
-          List<String> partsA = a.split('/');
-          List<String> partsB = b.split('/');
-          DateTime dateA = DateTime(
-            int.parse(partsA[2]),
-            int.parse(partsA[1]),
-            int.parse(partsA[0]),
+          // Ordenar las ventas por fecha
+          salesList.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+
+          // Crear barras individuales para cada venta
+          List<BarChartGroupData> barGroups = [];
+          for (int i = 0; i < salesList.length; i++) {
+            double total = salesList[i]['total'] as double;
+            barGroups.add(
+              BarChartGroupData(
+                x: i,
+                barRods: [
+                  BarChartRodData(
+                    toY: total,
+                    width: 16,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Calcular el máximo para el eje Y
+          double maxY = 0;
+          if (barGroups.isNotEmpty) {
+            maxY = barGroups
+                .map((group) => group.barRods.first.toY)
+                .reduce((a, b) => a > b ? a : b) *
+                1.2;
+          }
+          if (maxY == 0) maxY = 100;
+
+          double totalVentasPeriodo = salesList.fold(0.0, (prev, sale) => prev + (sale['total'] as double));
+          double step = maxY / 10;
+          if (step < 1) step = 1;
+
+          // Definir el widget para las etiquetas en el eje X (solo en la parte inferior)
+          SideTitles bottomTitles = SideTitles(
+            showTitles: true,
+            interval: 1,
+            getTitlesWidget: (value, meta) {
+              int index = value.toInt();
+              if (index < 0 || index >= salesList.length) return Container();
+              // Para evitar saturar, mostramos la etiqueta solo para cada 2do elemento
+              if (index % 2 != 0) return Container();
+              DateTime saleDate = salesList[index]['date'] as DateTime;
+              String label = "${saleDate.hour.toString().padLeft(2, '0')}:${saleDate.minute.toString().padLeft(2, '0')}";
+              return Text(
+                label,
+                style: const TextStyle(fontSize: 10),
+              );
+            },
           );
-          DateTime dateB = DateTime(
-            int.parse(partsB[2]),
-            int.parse(partsB[1]),
-            int.parse(partsB[0]),
-          );
-          return dateA.compareTo(dateB);
-        });
 
-        // Crear grupos de barras para la gráfica
-        List<BarChartGroupData> barGroups = [];
-        for (int i = 0; i < sortedKeys.length; i++) {
-          double total = aggregatedData[sortedKeys[i]]!;
-          barGroups.add(
-            BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: total,
-                  width: 16,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ],
-            ),
-          );
-        }
+          // Envolver el gráfico en un SingleChildScrollView para permitir scroll horizontal
+          return Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    // Ajusta el ancho según la cantidad de ventas individuales
+                    width: barGroups.length * 30.0,
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: maxY,
+                        barTouchData: BarTouchData(
+                          enabled: true,
+                          touchTooltipData: BarTouchTooltipData(
 
-        // Calcular el máximo para el eje Y
-        double maxY = barGroups
-            .map((group) => group.barRods.first.toY)
-            .reduce((a, b) => a > b ? a : b) * 1.2;
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              // Verifica que el índice esté en el rango de salesList
+                              if (groupIndex < 0 || groupIndex >= salesList.length) return null;
+                              final sale = salesList[groupIndex];
+                              final saleTotal = sale['total'] as double;
+                              final saleDate = sale['date'] as DateTime;
+                              final formattedTime =
+                                  "${saleDate.hour.toString().padLeft(2, '0')}:${saleDate.minute.toString().padLeft(2, '0')}";
+                              return BarTooltipItem(
+                                "\$${saleTotal.toStringAsFixed(2)}\n$formattedTime",
+                                const TextStyle(color: Colors.white),
+                              );
+                            },
+                          ),
+                        ),
 
-        // Calcular el total de ventas del período (sumando los totales por día)
-        double totalVentasPeriodo = aggregatedData.values.fold(0.0, (prev, element) => prev + element);
-
-        return Column(
-          children: [
-            Expanded(
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: maxY,
-                  barTouchData: BarTouchData(enabled: true),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          int index = value.toInt();
-                          if (index < 0 || index >= sortedKeys.length) return Container();
-                          return Text(
-                            sortedKeys[index].split('/').sublist(0, 2).join('/'),
-                            style: const TextStyle(fontSize: 10),
-                          );
-                        },
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: bottomTitles,
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              interval: step,
+                              getTitlesWidget: (value, meta) {
+                                int closedValue = (value.toInt() ~/ 10) * 10;
+                                return Text(
+                                  closedValue.toString(),
+                                  style: const TextStyle(fontSize: 10),
+                                );
+                              },
+                            ),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        barGroups: barGroups,
                       ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        interval: 100,
-                        getTitlesWidget: (value, meta) {
-                          if (value % 100 == 0) {
-                            return Text(
-                              value.toInt().toString(),
-                              style: const TextStyle(fontSize: 10),
-                            );
-                          }
-                          return Container();
-                        },
-                      ),
-                    ),
-                    rightTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
                     ),
                   ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: barGroups,
+
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text("Fecha (día/mes)", style: TextStyle(fontSize: 12)),
-                Text(
-                  _selectedTimeFilter == "day"
-                      ? "Total de Ventas del Día: \$${totalVentasPeriodo.toStringAsFixed(2)}"
-                      : _selectedTimeFilter == "week"
-                      ? "Total de Ventas de la Semana: \$${totalVentasPeriodo.toStringAsFixed(2)}"
-                      : "Total de Ventas del Mes: \$${totalVentasPeriodo.toStringAsFixed(2)}",
-                  style: const TextStyle(fontSize: 12),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Hora (HH:mm)", style: TextStyle(fontSize: 12)),
+                  Text(
+                    "Total de Ventas del Día: \$${totalVentasPeriodo.toStringAsFixed(2)}",
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          );
+
+        }
+
+
+        else {
+          // ... Lógica para "week" y "month" (se mantiene igual)
+          // (Puedes dejar tu código actual para esos casos)
+
+          // Agrupar las ventas por día (clave: "día/mes/año")
+          Map<String, double> aggregatedData = {};
+          for (var doc in docs) {
+            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+            Timestamp ts = data['fecha'];
+            DateTime date = ts.toDate();
+            String key = "${date.day}/${date.month}/${date.year}";
+            double total = 0.0;
+            if (data['totalVenta'] is num) {
+              total = (data['totalVenta'] as num).toDouble();
+            } else if (data['totalVenta'] is String) {
+              total = double.tryParse(data['totalVenta'].toString()) ?? 0.0;
+            }
+            aggregatedData[key] = (aggregatedData[key] ?? 0) + total;
+          }
+
+          // Ordenar las claves (fechas) de forma ascendente
+          List<String> sortedKeys = aggregatedData.keys.toList();
+          sortedKeys.sort((a, b) {
+            List<String> partsA = a.split('/');
+            List<String> partsB = b.split('/');
+            DateTime dateA = DateTime(
+              int.parse(partsA[2]),
+              int.parse(partsA[1]),
+              int.parse(partsA[0]),
+            );
+            DateTime dateB = DateTime(
+              int.parse(partsB[2]),
+              int.parse(partsB[1]),
+              int.parse(partsB[0]),
+            );
+            return dateA.compareTo(dateB);
+          });
+
+          // Crear grupos de barras para la gráfica
+          List<BarChartGroupData> barGroups = [];
+          for (int i = 0; i < sortedKeys.length; i++) {
+            double total = aggregatedData[sortedKeys[i]]!;
+            barGroups.add(
+              BarChartGroupData(
+                x: i,
+                barRods: [
+                  BarChartRodData(
+                    toY: total,
+                    width: 16,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          double maxY = barGroups
+              .map((group) => group.barRods.first.toY)
+              .reduce((a, b) => a > b ? a : b) * 1.2;
+          double totalVentasPeriodo = aggregatedData.values.fold(0.0, (prev, element) => prev + element);
+          double step = maxY / 10;
+          if (step < 1) step = 1;
+
+          return Column(
+            children: [
+              Expanded(
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: maxY,
+                    barTouchData: BarTouchData(enabled: true),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            int index = value.toInt();
+                            if (index < 0 || index >= sortedKeys.length) return Container();
+                            return Text(
+                              sortedKeys[index].split('/').sublist(0, 2).join('/'),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          interval: step,
+                          getTitlesWidget: (value, meta) {
+                            int closedValue = (value.toInt() ~/ 10) * 10;
+                            return Text(
+                              closedValue.toString(),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: barGroups,
+                  ),
                 ),
-              ],
-            ),
-          ],
-        );
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Fecha (día/mes)", style: TextStyle(fontSize: 12)),
+                  Text(
+                    _selectedTimeFilter == "week"
+                        ? "Total de Ventas de la Semana: \$${totalVentasPeriodo.toStringAsFixed(2)}"
+                        : "Total de Ventas del Mes: \$${totalVentasPeriodo.toStringAsFixed(2)}",
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }
       },
     );
   }
-
 
 
 
@@ -396,8 +574,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Menú de opciones", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text("Ver más →", style: TextStyle(fontSize: 16, color: Colors.blue)),
+          Text("Menú de opciones",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text("", style: TextStyle(fontSize: 16, color: Colors.blue)),
         ],
       ),
     );
@@ -448,7 +627,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             ),
             const SizedBox(height: 10),
             Text(item["text"],
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             const SizedBox(height: 5),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -467,7 +649,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       children: [
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          child: Text("Sección Inferior Adicional", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          child: Text("Sección Inferior Adicional",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         ),
         Container(
           height: 150,
@@ -476,7 +659,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Center(child: Text("Contenido de la sección inferior", style: TextStyle(fontSize: 16))),
+          child: const Center(
+              child: Text("Contenido de la sección inferior",
+                  style: TextStyle(fontSize: 16))),
         ),
       ],
     );
@@ -492,7 +677,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
         children: [
           IconButton(icon: const Icon(Icons.menu), onPressed: () {}),
           const SizedBox(width: 40),
-          IconButton(icon: const Icon(Icons.person), onPressed: () => Navigator.pushNamed(context, '/perfil')),
+          IconButton(
+              icon: const Icon(Icons.person),
+              onPressed: () => Navigator.pushNamed(context, '/perfil')),
         ],
       ),
     );
@@ -511,7 +698,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) => const VentaPage(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const VentaPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
