@@ -2,7 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
+
+import '../../main.dart';
 
 class ProductosAlmacen extends StatefulWidget {
   const ProductosAlmacen({
@@ -37,6 +40,29 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
       });
     });
   }
+
+  void _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings = InitializationSettings(android: initializationSettingsAndroid);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _showNotification(String productName) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'stock_channel',
+      'Stock Notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(android: androidPlatformChannelSpecifics);
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Stock Actualizado',
+      'El producto "$productName" ya no está en stock bajo.',
+      platformChannelSpecifics,
+    );
+  }
+
 
   Future<void> _loadUserData() async {
     try {
@@ -297,21 +323,13 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          // Abre el scanner
           var result = await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const SimpleBarcodeScannerPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const SimpleBarcodeScannerPage()),
           );
-
-          print("Resultado del escaneo: $result"); // Debug
-          await Future.delayed(const Duration(milliseconds: 500));
 
           if (result != null && result != "-1") {
             String scannedCode = result.toString();
-
-            // Consulta Firestore para ver si el código escaneado ya existe en este almacén
             QuerySnapshot query = await FirebaseFirestore.instance
                 .collection('productos')
                 .where('CodigoBarras', isEqualTo: scannedCode)
@@ -319,9 +337,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                 .get();
 
             if (query.docs.isNotEmpty) {
-              // El producto ya existe: pedir cantidad a agregar
               TextEditingController cantidadController = TextEditingController();
-
               bool? confirmUpdate = await showDialog<bool>(
                 context: context,
                 builder: (context) {
@@ -331,22 +347,12 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Text('Ingrese la cantidad de artículos a agregar:'),
-                        TextField(
-                          controller: cantidadController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(hintText: 'Cantidad'),
-                        ),
+                        TextField(controller: cantidadController, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'Cantidad')),
                       ],
                     ),
                     actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Aceptar'),
-                      ),
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                      TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Aceptar')),
                     ],
                   );
                 },
@@ -354,36 +360,24 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
 
               if (confirmUpdate == true) {
                 int cantidadAgregar = int.tryParse(cantidadController.text) ?? 0;
-
                 if (cantidadAgregar > 0) {
                   DocumentSnapshot productoDoc = query.docs.first;
                   int stockActual = int.tryParse(productoDoc['Stock'].toString()) ?? 0;
                   int nuevoStock = stockActual + cantidadAgregar;
 
-                  await FirebaseFirestore.instance
-                      .collection('productos')
-                      .doc(productoDoc.id)
-                      .update({'Stock': nuevoStock.toString()});
+                  await FirebaseFirestore.instance.collection('productos').doc(productoDoc.id).update({'Stock': nuevoStock.toString()});
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Stock actualizado a $nuevoStock')),
-                  );
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Stock actualizado a $nuevoStock')));
+
+                  if (nuevoStock > 10) {
+                    _showNotification(productoDoc['Nombre']);
+                  }
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Ingrese una cantidad válida')),
-                  );
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ingrese una cantidad válida')));
                 }
               }
             } else {
-              // Si el producto no existe, permite agregarlo
-              await Navigator.pushNamed(
-                context,
-                '/addProducto',
-                arguments: {
-                  "uidProducto": scannedCode,
-                  "uidAlma": uidAlma,
-                },
-              );
+              await Navigator.pushNamed(context, '/addProducto', arguments: {"uidProducto": scannedCode, "uidAlma": uidAlma});
               setState(() {});
             }
           }
@@ -392,6 +386,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
+
 
 
 
