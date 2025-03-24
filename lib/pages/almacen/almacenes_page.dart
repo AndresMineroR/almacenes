@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
@@ -12,6 +13,28 @@ class Almacenes extends StatefulWidget {
 }
 
 class _AlmacenesState extends State<Almacenes> {
+  String UidUser = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+        print('j cksdj vksdj vsd+++++++');
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +42,7 @@ class _AlmacenesState extends State<Almacenes> {
         title: const Text('Almacenes'),
       ),
       body: FutureBuilder(
-        future: getAlmacenes(),
+        future: getAlmacenes(UidUser),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(

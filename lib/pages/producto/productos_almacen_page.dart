@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:simple_barcode_scanner/simple_barcode_scanner.dart';
@@ -15,12 +16,14 @@ class ProductosAlmacen extends StatefulWidget {
 class _ProductosAlmacenState extends State<ProductosAlmacen> {
   late String uidAlma;
   late String nombreAlma;
+  String UidUser = '';
   String? categoriaSeleccionada;
   List<Map<String, dynamic>> categorias = [];
 
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
       setState(() {
@@ -35,9 +38,25 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
     });
   }
 
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
+
   Future<void> cargarCategorias() async {
     final snapshot =
-        await FirebaseFirestore.instance.collection('categorias').get();
+        await FirebaseFirestore.instance.collection('categorias')
+            .where('IdPropietario', isEqualTo: UidUser).get();
     setState(() {
       categorias = [
         {'id': 'todas', 'NombreCat': 'Todas'},
@@ -84,7 +103,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
           ),
           Expanded(
             child: FutureBuilder(
-              future: getProductosAlmacen(uidAlma),
+              future: getProductosAlmacen(uidAlma,UidUser),
               builder: ((context, snapshot) {
                 if (snapshot.hasData) {
                   var productos = (categoriaSeleccionada != null &&
@@ -260,6 +279,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                                     ['ImagenProducto'],
                                 "CodigoBarras": productos[index]
                                     ['CodigoBarras'],
+                                "Almacen": nombreAlma,
                               });
                         },
                       );

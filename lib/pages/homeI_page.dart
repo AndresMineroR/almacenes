@@ -1,6 +1,7 @@
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -14,6 +15,21 @@ class HomeI extends StatefulWidget {
 }
 
 class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
+  String UidUser = '';
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
   late AnimationController _controller;
   late Animation<double> _animation;
   final PageController _pageController = PageController(viewportFraction: 0.33);
@@ -60,6 +76,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -170,7 +187,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   /// Dropdown para seleccionar el almacén.
   Widget _buildWarehouseDropdown() {
     return FutureBuilder<List>(
-      future: getAlmacenes(),
+      future: getAlmacenes(UidUser),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();

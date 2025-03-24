@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
@@ -13,15 +14,17 @@ class _ProductosState extends State<Productos> {
   bool almacenesCargados = false;
   // Variable para almacenar el almacén seleccionado; "all" indica que se muestran todos
   String selectedAlmacen = "all";
+  String UidUser = '';
 
   @override
   void initState() {
     super.initState();
-    _cargarAlmacenes();
+    _loadUserData();
+    _cargarAlmacenes(UidUser);
   }
 
-  Future<void> _cargarAlmacenes() async {
-    var almacenesData = await getAlmacenes();
+  Future<void> _cargarAlmacenes(String uidUser) async {
+    var almacenesData = await getAlmacenes(uidUser);
     setState(() {
       almacenesMap = {
         for (var almacen in almacenesData)
@@ -29,6 +32,21 @@ class _ProductosState extends State<Productos> {
       };
       almacenesCargados = true;
     });
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
   }
 
   @override
@@ -69,7 +87,7 @@ class _ProductosState extends State<Productos> {
           // Lista de productos filtrados
           Expanded(
             child: FutureBuilder(
-              future: getProductos(),
+              future: getProductos(UidUser),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(

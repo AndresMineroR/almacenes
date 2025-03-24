@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
@@ -8,6 +9,26 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 class _HomeState extends State<Home> {
+
+  String UidUser = '';
+  @override
+  void initState() {
+    _loadUserData();
+  }
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +40,7 @@ class _HomeState extends State<Home> {
         ),
       ),
       body: FutureBuilder(
-        future: getProductos(),
+        future: getProductos(UidUser),
         builder: ((context, snapshot) {
           if (snapshot.hasData) {
             return SingleChildScrollView(

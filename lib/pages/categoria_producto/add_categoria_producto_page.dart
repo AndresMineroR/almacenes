@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
@@ -12,6 +13,28 @@ class _AddCategoriaProductoPageState extends State<AddCategoriaProductoPage> {
   GlobalKey<FormState> keyForm = GlobalKey();
   TextEditingController nomCtrlCat = TextEditingController(text: '');
   TextEditingController descCtrlCat = TextEditingController(text: '');
+  String UidUser = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+        print('j cksdj vksdj vsd+++++++');
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +103,8 @@ class _AddCategoriaProductoPageState extends State<AddCategoriaProductoPage> {
                   onTap: () async {
                     await addCategoriaProducto(
                       nomCtrlCat.text,
-                      descCtrlCat.text
+                      descCtrlCat.text,
+                      UidUser
                     ).then((_){
                       Navigator.pop(context);
                     });

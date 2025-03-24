@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
@@ -28,11 +29,12 @@ class _EditProductoPageState extends State<EditProductoPage> {
   String uidAlma = '';
   List<dynamic> categorias = [];
   String? selectedCategoria;
+  String UidUser = '';
 
   @override
   void initState() {
     super.initState();
-    _loadCategorias();
+    _loadUserData();
     Future.microtask((){
       final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
       setState((){
@@ -51,12 +53,43 @@ class _EditProductoPageState extends State<EditProductoPage> {
     });
   }
 
-  _loadCategorias() async {
-    var categoriasData = await getCategoriasProducto();
-    setState(() {
-      categorias = categoriasData;
-    });
+  Future<void> _loadUserData() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid;
+        });
+        print("UID del usuario obtenido: $UidUser");
+
+        // 🔥 Cargar categorías SOLO después de obtener `UidUser`
+        _loadCategorias(UidUser);
+      } else {
+        print("No hay usuario autenticado.");
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
   }
+
+
+
+  Future<void> _loadCategorias(String idUser) async {
+    if (idUser.isNotEmpty) { // Verificar que `UidUser` no está vacío
+      print("Cargando categorías para UID: $idUser");
+
+      var categoriasData = await getCategoriasProducto(idUser);
+      setState(() {
+        categorias = categoriasData;
+      });
+
+      print("Categorías cargadas correctamente: $categoriasData");
+    } else {
+      print("No se pueden cargar categorías: UidUser está vacío.");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -170,23 +203,25 @@ class _EditProductoPageState extends State<EditProductoPage> {
           Icons.category,
           categorias.isNotEmpty
               ? DropdownButtonFormField<String>(
-            value: catCtrl.text,
+            value: selectedCategoria ?? catCtrl.text,
             decoration: const InputDecoration(labelText: 'Categoría del producto'),
             items: categorias.map<DropdownMenuItem<String>>((cat) {
+              print("Mostrando categoría en dropdown: ${cat['NombreCat']}"); // 🔥 Depuración
               return DropdownMenuItem<String>(
-                value: cat['uidCat'], // Aquí usamos el uid como valor
+                value: cat['uidCat'],
                 child: Text(cat['NombreCat']),
               );
             }).toList(),
             onChanged: (newValue) {
               setState(() {
                 selectedCategoria = newValue;
-                catCtrl.text = selectedCategoria ?? '';  // Actualizamos el controlador
+                catCtrl.text = selectedCategoria ?? '';
               });
             },
           )
-              : CircularProgressIndicator(), // Mostrar un cargador mientras no haya categorías
+              : const Center(child: CircularProgressIndicator()), // Cargar mientras se obtiene la lista
         ),
+
 
         formItemsDesign(
             Icons.attach_money,
@@ -243,7 +278,8 @@ class _EditProductoPageState extends State<EditProductoPage> {
                   ltCtrl.text,
                   cantidadCtrl.text,
                   uidAlma,
-                  finalURL
+                  finalURL,
+                  UidUser
               ).then((_){
                 Navigator.pop(context);
               });

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../NuevaVenta_page.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
@@ -12,8 +13,28 @@ class VentaPage extends StatefulWidget {
 }
 
 class _VentaPageState extends State<VentaPage> {
+  String UidUser = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
   Future<void> _seleccionarAlmacen() async {
-    List almacenes = await getAlmacenes(); // Obtener lista de almacenes
+    List almacenes = await getAlmacenes(UidUser); // Obtener lista de almacenes
 
     if (almacenes.isNotEmpty) {
       showDialog(

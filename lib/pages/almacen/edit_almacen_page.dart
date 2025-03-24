@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -19,6 +20,28 @@ class _EditAlmacenPageState extends State<EditAlmacenPage> {
   String imagenU = ""; // Almacena la URL de la imagen cargada
   String imageUrl = "";
   bool isUploading = false;
+  String UidUser = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,6 +159,7 @@ class _EditAlmacenPageState extends State<EditAlmacenPage> {
               nomCtrlAlma.text,
               descCtrlAlma.text,
               finalURL, // Actualizar la URL de la imagen en Firestore
+              UidUser,
             ).then((_) {
               Navigator.pop(context);
             });

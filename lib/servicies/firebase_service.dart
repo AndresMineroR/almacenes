@@ -85,10 +85,11 @@ Future<List<Map<String, dynamic>>> getProductosMenorStock(String uidAlmacen, {in
 
 
 //función para traer los productos
-Future<List> getProductos() async{
+Future<List> getProductos(String uidUser) async{
   List productos = [];
   try{
-    QuerySnapshot queryProduct = await baseInventarioP.collection('productos').get();
+    QuerySnapshot queryProduct = await baseInventarioP.collection('productos')
+        .where('UidUser', isEqualTo: uidUser).get();
     for (var doc in queryProduct.docs) {
       final Map< String, dynamic> data = doc.data() as Map< String, dynamic>;
       final pro = {
@@ -113,10 +114,14 @@ Future<List> getProductos() async{
 }
 
 //función para traer los productos de un almacen
-Future<List> getProductosAlmacen(String uidAlma) async{
+Future<List> getProductosAlmacen(String uidAlma, String uidUser) async{
+  print(uidAlma+'+++++++++++++++'+uidUser);
   List productos = [];
   try{
-    QuerySnapshot queryProduct = await baseInventario.collection('productos').where('UidAlma', isEqualTo: uidAlma ).get();
+    QuerySnapshot queryProduct = await baseInventario.collection('productos')
+        .where('UidAlma', isEqualTo: uidAlma )
+        .where('UidUser', isEqualTo: uidUser)
+        .get();
     for (var doc in queryProduct.docs) {
       final Map< String, dynamic> data = doc.data() as Map< String, dynamic>;
       final pro = {
@@ -151,7 +156,8 @@ Future<void> addProducto(
     String lt,
     String uidAlma,
     String stock,
-    String url
+    String url,
+    String uidUser
     ) async {
   try {
     DocumentReference docRef = await baseInventario.collection('productos').add({
@@ -164,7 +170,8 @@ Future<void> addProducto(
       'Lote': lt,
       'UidAlma': uidAlma,
       'Stock': stock,
-      'ImagenProducto': url
+      'ImagenProducto': url,
+      'UidUser': uidUser
     });
 
     print("Producto agregado con éxito: ${docRef.id}"); // ID generado automáticamente
@@ -176,7 +183,7 @@ Future<void> addProducto(
 
 
 //función para actualizar un producto
-Future<void> updateProducto(String uId, String nomNew, String desNew, String catNew, String preNew, String cadNew, String ltNew, String stock, String uidalma, String url) async {
+Future<void> updateProducto(String uId, String nomNew, String desNew, String catNew, String preNew, String cadNew, String ltNew, String stock, String uidalma, String url, String uidUser) async {
   await baseInventario.collection('productos').doc(uId).update({
     'Nombre': nomNew,
     'Descripcion': desNew,
@@ -186,7 +193,8 @@ Future<void> updateProducto(String uId, String nomNew, String desNew, String cat
     'Lote': ltNew,
     'Stock': stock,
     'UidAlma': uidalma,
-    'ImagenProducto': url
+    'ImagenProducto': url,
+    'UidUser': uidUser
   });
 }
 //función para borrar un producto
@@ -195,10 +203,12 @@ Future<void> deleteProducto(String uid) async{
 }
 
 //función para traer los almacenes
-Future<List> getAlmacenes() async{
+Future<List> getAlmacenes(String uidUser) async{
+  print(' ++++++++++++++++++++++++++++'+uidUser);
   List Almacenes = [];
   try{
-    QuerySnapshot queryAlmacenes = await baseInventario.collection('almacenes').get();
+    QuerySnapshot queryAlmacenes = await baseInventario.collection('almacenes')
+        .where('IdPropietario', isEqualTo: uidUser).get();
     for (var doc in queryAlmacenes.docs) {
       final Map< String, dynamic> data = doc.data() as Map< String, dynamic>;
       final alma = {
@@ -225,12 +235,13 @@ Future<void> addAlmacen(String nomAlm, String desAlm, String imagenUrl, String u
   });
 }
 //función para actualizar un almacen
-Future<void> updateAlmacen(String uidAlm, String nomNewAlm, String desNewAlm, String url) async {
+Future<void> updateAlmacen(String uidAlm, String nomNewAlm, String desNewAlm, String url, String uidUser) async {
   await baseInventario.collection('almacenes').doc(uidAlm).set({
     'uidAlma': uidAlm,
     'NombreAlma': nomNewAlm,
     'DescripcionAlma': desNewAlm,
-    'ImagenAlma': url
+    'ImagenAlma': url,
+    'IdPropietario': uidUser
   });
 }
 //función para borrar un almacen
@@ -239,10 +250,11 @@ Future<void> deleteAlmacen(String uidAlm) async{
 }
 
 //función para traer las actegorías de producto
-Future<List> getCategoriasProducto() async{
+Future<List> getCategoriasProducto(String uidUser) async{
   List categorias = [];
   try{
-    QuerySnapshot queryCategorias = await baseInventario.collection('categorias').get();
+    QuerySnapshot queryCategorias = await baseInventario.collection('categorias')
+        .where('IdPropietario', isEqualTo: uidUser).get();
     for (var doc in queryCategorias.docs) {
       final Map< String, dynamic> data = doc.data() as Map< String, dynamic>;
       final catPro = {
@@ -258,17 +270,19 @@ Future<List> getCategoriasProducto() async{
   return categorias;
 }
 //función para guardar una categoría de producto
-Future<void> addCategoriaProducto(String nomCat, String desCat) async{
+Future<void> addCategoriaProducto(String nomCat, String desCat, String uidUser) async{
   await baseInventario.collection('categorias').add({
     'NombreCat': nomCat,
     'DescripcionCat': desCat,
+    'IdPropietario': uidUser
   });
 }
 //función para actualizar una categoría de producto
-Future<void> updateCategoriaProducto(String uidCat, String nomNewCat, String desNewCat) async {
+Future<void> updateCategoriaProducto(String uidCat, String nomNewCat, String desNewCat, String uidUser) async {
   await baseInventario.collection('categorias').doc(uidCat).set({
     'NombreCat': nomNewCat,
     'DescripcionCat': desNewCat,
+    'IdPropietario': uidUser
   });
 }
 //función para borrar una categoría de producto

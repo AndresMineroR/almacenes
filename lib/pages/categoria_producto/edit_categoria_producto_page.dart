@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 
@@ -13,6 +14,28 @@ class _EditCategoriaProductoPageState extends State<EditCategoriaProductoPage> {
   TextEditingController nomCtrlCat = TextEditingController();
   TextEditingController descCtrlCat = TextEditingController();
   TextEditingController uidCat = TextEditingController();
+  String UidUser = '';
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      // Obtener el usuario autenticado
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid ?? '';
+        });
+        print('j cksdj vksdj vsd+++++++');
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
@@ -74,7 +97,8 @@ class _EditCategoriaProductoPageState extends State<EditCategoriaProductoPage> {
               await updateCategoriaProducto(
                   uidCat.text,
                   nomCtrlCat.text,
-                  descCtrlCat.text
+                  descCtrlCat.text,
+                  UidUser
               ).then((_){
                 Navigator.pop(context);
               });

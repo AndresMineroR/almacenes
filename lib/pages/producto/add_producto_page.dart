@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
@@ -27,6 +29,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
   TextEditingController uidProducto = TextEditingController(text: '');
   // uidAlma se mantiene si es requerido para otro propósito (por ejemplo, identificar el almacén)
   TextEditingController uidAlma = TextEditingController(text: '');
+  String UidUser = '';
 
   List<dynamic> categorias = [];
   String? selectedCategoria;
@@ -35,15 +38,47 @@ class _AddProductoPageState extends State<AddProductoPage> {
   @override
   void initState() {
     super.initState();
-    _loadCategorias();
+    _loadUserData();
   }
 
-  _loadCategorias() async {
-    var categoriasData = await getCategoriasProducto();
-    setState(() {
-      categorias = categoriasData;
-    });
+  Future<void> _loadUserData() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        setState(() {
+          UidUser = user.uid;
+        });
+
+        print("UID del usuario obtenido: $UidUser");
+
+        _loadCategorias();
+      } else {
+        print("No hay usuario autenticado.");
+      }
+    } catch (e) {
+      print('Error cargando datos del usuario: $e');
+    }
   }
+
+
+
+  Future<void> _loadCategorias() async {
+    if (UidUser.isNotEmpty) {  // Verificamos que UidUser no esté vacío
+      print("Cargando categorías para UID: $UidUser");
+
+      var categoriasData = await getCategoriasProducto(UidUser);
+      setState(() {
+        categorias = categoriasData;
+      });
+
+      print("Categorías cargadas correctamente: $categoriasData");
+    } else {
+      print("No se pueden cargar categorías: UidUser está vacío.");
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -262,6 +297,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
               uidAlma.text,
               cantCtrl.text,
               imageUrl,
+              UidUser
             ).then((_) {
               Navigator.pop(context);
             });
