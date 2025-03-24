@@ -35,13 +35,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       "color": Colors.orange
     },
     {
-      "icon": FontAwesomeIcons.boxOpen,
-      "text": "Productos",
-      "desc": "Consulta y gestiona tus productos",
-      "route": "/productos",
-      "color": Colors.green
-    },
-    {
       "icon": FontAwesomeIcons.warehouse,
       "text": "Almacenes",
       "desc": "Administra tus almacenes",
@@ -54,6 +47,13 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       "desc": "Organiza tus productos por categorías",
       "route": "/categorias",
       "color": Colors.red
+    },
+    {
+      "icon": FontAwesomeIcons.boxOpen,
+      "text": "Productos",
+      "desc": "Consulta y gestiona tus productos",
+      "route": "/productos",
+      "color": Colors.green
     },
   ];
 
@@ -758,6 +758,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       ),
     );
   }
+
 
   void _mostrarMas(BuildContext context, List<Map<String, dynamic>> productos, String emoji) {
     showModalBottomSheet(

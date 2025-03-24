@@ -5,6 +5,8 @@ FirebaseFirestore baseInventario = FirebaseFirestore.instance;
 FirebaseFirestore baseInventarioP = FirebaseFirestore.instance;
 
 //producto mas vendido
+// Producto más vendido
+// Producto más vendido
 Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) async {
   Map<String, int> ventasPorProducto = {};
 
@@ -16,7 +18,7 @@ Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) as
   for (var ventaDoc in ventasSnapshot.docs) {
     List productos = ventaDoc.data()['productosDetalle'] ?? [];
     for (var producto in productos) {
-      String codigo = producto['codigo'];
+      String codigo = producto['codigoBarras'];
       int cantidad = producto['cantidad'];
       ventasPorProducto[codigo] = (ventasPorProducto[codigo] ?? 0) + cantidad;
     }
@@ -32,7 +34,7 @@ Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) as
     String nombreProducto = '';
     for (var ventaDoc in ventasSnapshot.docs) {
       List productos = ventaDoc.data()['productosDetalle'];
-      var encontrado = productos.firstWhere((p) => p['codigo'] == entry.key, orElse: () => null);
+      var encontrado = productos.firstWhere((p) => p['codigoBarras'] == entry.key, orElse: () => null);
       if (encontrado != null) {
         nombreProducto = encontrado['nombre'];
         break;
@@ -52,20 +54,33 @@ Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) as
 //Producto con menos stock
 
 Future<List<Map<String, dynamic>>> getProductosMenorStock(String uidAlmacen, {int limite = 10}) async {
+  // Traer todos los productos del almacén
   final snapshot = await FirebaseFirestore.instance
       .collection('productos')
       .where('UidAlma', isEqualTo: uidAlmacen)
-      .orderBy('Stock', descending: false)
-      .limit(limite)
       .get();
 
-  return snapshot.docs.map((doc) {
-    return {
-      'nombre': doc['Nombre'],
-      'stock': doc['Stock'],
-    };
-  }).toList();
+  List<Map<String, dynamic>> productos = [];
+
+  for (var doc in snapshot.docs) {
+    final data = doc.data();
+    // Convertir el valor de 'Stock' a entero, asumiendo que viene como string.
+    final stock = int.tryParse(data['Stock'].toString()) ?? 0;
+    // Si el stock es menor a 10, se considera de poco stock.
+    if (stock < limite) {
+      productos.add({
+        'nombre': data['Nombre'],
+        'stock': stock,
+      });
+    }
+  }
+
+  // Ordenar los productos de menor a mayor stock
+  productos.sort((a, b) => a['stock'].compareTo(b['stock']));
+
+  return productos;
 }
+
 
 
 
@@ -86,6 +101,7 @@ Future<List> getProductos() async{
         "Stock": data['Stock'],
         "UidAlma": data['UidAlma'],
         "ImagenProducto": data['ImagenProducto'],
+        "CodigoBarras": data['CodigoBarras'],
         "uid": doc.id,
       };
       productos.add(pro);
@@ -113,6 +129,7 @@ Future<List> getProductosAlmacen(String uidAlma) async{
         "UidAlma": data['UidAlma'],
         "Stock": data['Stock'],
         "ImagenProducto": data['ImagenProducto'],
+        "CodigoBarras": data['CodigoBarras'],
         "uid": doc.id,
       };
       productos.add(pro);

@@ -23,8 +23,10 @@ class _AddProductoPageState extends State<AddProductoPage> {
   TextEditingController cadCtrl = TextEditingController(text: '');
   TextEditingController ltCtrl = TextEditingController(text: '');
   TextEditingController cantCtrl = TextEditingController(text: '');
-  TextEditingController uidAlma = TextEditingController(text: '');
+  // Este controlador contendrá el código escaneado (Código de Barras) que ahora se guarda en uidProducto
   TextEditingController uidProducto = TextEditingController(text: '');
+  // uidAlma se mantiene si es requerido para otro propósito (por ejemplo, identificar el almacén)
+  TextEditingController uidAlma = TextEditingController(text: '');
 
   List<dynamic> categorias = [];
   String? selectedCategoria;
@@ -45,9 +47,12 @@ class _AddProductoPageState extends State<AddProductoPage> {
 
   @override
   Widget build(BuildContext context) {
-    final Map arguments = ModalRoute.of(context)!.settings.arguments as Map;
-    uidAlma.text = arguments['uidAlma'];
-    String uidProducto = arguments['uidProducto'];
+    final Map arguments =
+    ModalRoute.of(context)!.settings.arguments as Map<dynamic, dynamic>;
+    // Asumimos que el código escaneado viene en el argumento 'uidProducto'
+    uidProducto.text = arguments['uidProducto'];
+    // uidAlma podría provenir de otro argumento o quedar vacío si no es necesario
+    uidAlma.text = arguments['uidAlma'] ?? '';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agregar Producto'),
@@ -55,10 +60,10 @@ class _AddProductoPageState extends State<AddProductoPage> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(10.0),
         child: Container(
-          margin: EdgeInsets.all(20.0),
+          margin: const EdgeInsets.all(20.0),
           child: Form(
             key: keyForm,
-            child: formUI(uidProducto),
+            child: formUI(),
           ),
         ),
       ),
@@ -67,14 +72,36 @@ class _AddProductoPageState extends State<AddProductoPage> {
 
   formItemsDesign(icon, item) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 7),
-      child: Card(child: ListTile(leading: Icon(icon), title: item)),
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Card(
+        child: ListTile(
+          leading: Icon(icon),
+          title: item,
+        ),
+      ),
     );
   }
 
-  Widget formUI(String uidProducto) {
+  Widget formUI() {
     return Column(
       children: <Widget>[
+        // Campo para mostrar el código escaneado (Código de Barras) usando uidProducto y solo lectura
+        formItemsDesign(
+            Icons.qr_code,
+            TextFormField(
+              controller: uidProducto,
+              decoration: const InputDecoration(
+                labelText: 'Código Escaneado',
+              ),
+              keyboardType: TextInputType.text,
+              readOnly: true,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'El código escaneado no puede estar vacío';
+                }
+                return null;
+              },
+            )),
         formItemsDesign(
             Icons.abc,
             TextFormField(
@@ -90,24 +117,22 @@ class _AddProductoPageState extends State<AddProductoPage> {
                 return null;
               },
             )),
-
         formItemsDesign(
             Icons.abc,
             TextFormField(
               controller: descCtrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Descripción del producto',
               ),
               keyboardType: TextInputType.text,
-              //validator:,
             )),
-
         formItemsDesign(
           Icons.category,
           categorias.isNotEmpty
               ? DropdownButtonFormField<String>(
             value: selectedCategoria,
-            decoration: InputDecoration(labelText: 'Categoría del producto'),
+            decoration:
+            const InputDecoration(labelText: 'Categoría del producto'),
             items: categorias.map<DropdownMenuItem<String>>((cat) {
               return DropdownMenuItem<String>(
                 value: cat['uidCat'], // Aquí usamos el uid como valor
@@ -117,23 +142,21 @@ class _AddProductoPageState extends State<AddProductoPage> {
             onChanged: (newValue) {
               setState(() {
                 selectedCategoria = newValue;
-                catCtrl.text = selectedCategoria ?? '';  // Actualizamos el controlador
+                catCtrl.text = selectedCategoria ?? ''; // Actualizamos el controlador
               });
             },
           )
-              : CircularProgressIndicator(), // Mostrar un cargador mientras no haya categorías
+              : const CircularProgressIndicator(), // Mostrar un cargador mientras no haya categorías
         ),
-
         formItemsDesign(
             Icons.attach_money,
             TextFormField(
               controller: preCtrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Precio del producto',
               ),
               keyboardType: TextInputType.number,
             )),
-
         formItemsDesign(
           Icons.calendar_today,
           DateTimeFormField(
@@ -153,35 +176,32 @@ class _AddProductoPageState extends State<AddProductoPage> {
             },
           ),
         ),
-
         formItemsDesign(
             Icons.text_fields,
             TextFormField(
               controller: ltCtrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Lote del producto',
               ),
               keyboardType: TextInputType.text,
-              //validator:,
             )),
-
         formItemsDesign(
             Icons.numbers,
             TextFormField(
               controller: cantCtrl,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Stock del producto',
               ),
               keyboardType: TextInputType.number,
             )),
-
         formItemsDesign(
           Icons.image,
           Column(
             children: [
               ElevatedButton(
                 onPressed: () async {
-                  final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+                  final pickedImage =
+                  await ImagePicker().pickImage(source: ImageSource.gallery);
                   if (pickedImage != null) {
                     try {
                       final file = File(pickedImage.path);
@@ -213,7 +233,8 @@ class _AddProductoPageState extends State<AddProductoPage> {
           ),
         ),
         if (imageUrl.isNotEmpty)
-          Card(elevation: 2,
+          Card(
+            elevation: 2,
             margin: const EdgeInsets.symmetric(vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -228,11 +249,10 @@ class _AddProductoPageState extends State<AddProductoPage> {
               ),
             ),
           ),
-
         GestureDetector(
           onTap: () async {
             await addProducto(
-              uidProducto,
+              uidProducto.text, // Código de barras (uidProducto) en solo lectura
               nomCtrl.text,
               descCtrl.text,
               catCtrl.text,
@@ -241,28 +261,29 @@ class _AddProductoPageState extends State<AddProductoPage> {
               ltCtrl.text,
               uidAlma.text,
               cantCtrl.text,
-              imageUrl
-            ).then((_){
+              imageUrl,
+            ).then((_) {
               Navigator.pop(context);
             });
           },
           child: Container(
-            margin: EdgeInsets.all(30.0),
+            margin: const EdgeInsets.all(30.0),
             alignment: Alignment.center,
             decoration: ShapeDecoration(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30.0)),
-              gradient: LinearGradient(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30.0)),
+              gradient: const LinearGradient(
                 colors: [Color(0xFFEAC8CD), Color(0xFFECB6B6)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
             ),
-            child: Text("Guardar",
+            child: const Text("Guardar",
                 style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w500)),
-            padding: EdgeInsets.only(top: 16, bottom: 16),
+            padding: const EdgeInsets.only(top: 16, bottom: 16),
           ),
         ),
       ],
@@ -271,8 +292,8 @@ class _AddProductoPageState extends State<AddProductoPage> {
 
   String? validateName(String value) {
     String pattern = r'(^[a-zA-Z ]*$)';
-    RegExp regExp = new RegExp(pattern);
-    if (value.length == 0) {
+    RegExp regExp = RegExp(pattern);
+    if (value.isEmpty) {
       return "El nombre es necesario";
     } else if (!regExp.hasMatch(value)) {
       return "El nombre debe de ser a-z y A-Z";

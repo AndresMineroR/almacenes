@@ -18,9 +18,9 @@ class _MostrarProductoState extends State<MostrarProducto> {
     String ltCtrl = arguments['Lote'];
     String Stock = arguments['Stock'];
     return Scaffold(
-        appBar: AppBar(
+      appBar: AppBar(
         title: const Text('Informacion del producto'),
-    ),
+      ),
       body:  Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
@@ -74,7 +74,7 @@ class _MostrarProductoState extends State<MostrarProducto> {
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                        color: Color.fromARGB(255, 206, 148, 148),
+                      color: Color.fromARGB(255, 206, 148, 148),
                     ),
                   ),
                   Text(
