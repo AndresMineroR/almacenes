@@ -84,6 +84,7 @@ Future<List> getProductos() async{
         "Caducidad": data['Caducidad'],
         "Lote": data['Lote'],
         "Stock": data['Stock'],
+        "UidAlma": data['UidAlma'],
         "ImagenProducto": data['ImagenProducto'],
         "uid": doc.id,
       };

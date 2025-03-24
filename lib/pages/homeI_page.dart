@@ -503,46 +503,55 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           return Column(
             children: [
               Expanded(
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: maxY,
-                    barTouchData: BarTouchData(enabled: true),
-                    titlesData: FlTitlesData(
-                      show: true,
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            int index = value.toInt();
-                            if (index < 0 || index >= sortedKeys.length) return Container();
-                            return Text(
-                              sortedKeys[index].split('/').sublist(0, 2).join('/'),
-                              style: const TextStyle(fontSize: 10),
-                            );
-                          },
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal, // Permite desplazamiento horizontal
+                  child: SizedBox(
+                    width: barGroups.length * 50.0, // Ajusta el ancho dinámicamente según la cantidad de barras
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        maxY: maxY,
+                        barTouchData: BarTouchData(enabled: true),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false), // Oculta los títulos en el eje X superior
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                int index = value.toInt();
+                                if (index < 0 || index >= sortedKeys.length) return Container();
+                                return Text(
+                                  sortedKeys[index].split('/').sublist(0, 2).join('/'),
+                                  style: const TextStyle(fontSize: 10),
+                                );
+                              },
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              interval: step,
+                              getTitlesWidget: (value, meta) {
+                                int closedValue = (value.toInt() ~/ 10) * 10;
+                                return Text(
+                                  closedValue.toString(),
+                                  style: const TextStyle(fontSize: 10),
+                                );
+                              },
+                            ),
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 40,
-                          interval: step,
-                          getTitlesWidget: (value, meta) {
-                            int closedValue = (value.toInt() ~/ 10) * 10;
-                            return Text(
-                              closedValue.toString(),
-                              style: const TextStyle(fontSize: 10),
-                            );
-                          },
-                        ),
-                      ),
-                      rightTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
+                        borderData: FlBorderData(show: false),
+                        barGroups: barGroups,
                       ),
                     ),
-                    borderData: FlBorderData(show: false),
-                    barGroups: barGroups,
                   ),
                 ),
               ),
@@ -561,6 +570,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
               ),
             ],
           );
+
+
         }
       },
     );
