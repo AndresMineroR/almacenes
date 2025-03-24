@@ -6,6 +6,43 @@ FirebaseFirestore baseInventarioP = FirebaseFirestore.instance;
 
 //producto mas vendido
 // Producto más vendido
+
+
+Future<void> updateStock(Map<String, dynamic> args, String text, String uidAlma) async {
+  // Extraemos los argumentos enviados desde la ruta
+  final String uId = args['uidProducto'];
+  final String uidAlma = args['uidAlma'];
+
+  // Opcional: se obtiene el documento para verificar que coincida el almacén
+  final docRef = baseInventario.collection('productos').doc(uId);
+  final docSnapshot = await docRef.get();
+
+  if (docSnapshot.exists) {
+    final data = docSnapshot.data() as Map<String, dynamic>;
+    // Verifica que el almacén del documento coincida con el enviado
+    if (data['UidAlma'] == uidAlma) {
+      await docRef.update({
+        'Nombre': args['nomNew'],
+        'Descripcion': args['desNew'],
+        'Categoria': args['catNew'],
+        'Precio': args['preNew'],
+        'Caducidad': args['cadNew'],
+        'Lote': args['ltNew'],
+        'Stock': args['stock'],
+        'ImagenProducto': args['url'],
+      });
+    } else {
+      // Puedes manejar el caso en que no coincida el almacén, por ejemplo:
+      print('El almacén no coincide. No se actualiza el stock.');
+    }
+  } else {
+    print('El producto no existe.');
+  }
+}
+
+
+
+
 // Producto más vendido
 Future<List<Map<String, dynamic>>> getProductosMasVendidos(String uidAlmacen) async {
   Map<String, int> ventasPorProducto = {};

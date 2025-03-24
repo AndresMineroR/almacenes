@@ -1,10 +1,31 @@
+import 'dart:async'; // Asegúrate de importar dart:async
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
+
+import '../main.dart';
+
+/// Clase para representar una notificación de stock bajo
+class NotificationItem {
+  final String almacen;
+  final String producto;
+  final DateTime date;
+  bool ignored; // Nueva propiedad
+
+  NotificationItem({
+    required this.almacen,
+    required this.producto,
+    required this.date,
+    this.ignored = false,
+  });
+}
+
 
 class HomeI extends StatefulWidget {
   final AnimationController? animationController;
@@ -39,8 +60,14 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
   // Para el dropdown de almacenes
   String? _selectedAlmacen;
 
-  // Para filtrar la gráfica por período
-  String _selectedTimeFilter = "day"; // Valores: "day", "week", "month"
+  // Para filtrar la gráfica por período ("day", "week", "month")
+  String _selectedTimeFilter = "day";
+
+  // Lista de notificaciones de stock bajo
+  List<NotificationItem> _notifications = [];
+
+  // Suscripción al stream de cambios en los productos
+  StreamSubscription<QuerySnapshot>? _productSubscription;
 
   final List<Map<String, dynamic>> _menuItems = [
     {
@@ -84,14 +111,147 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
     _animation =
         CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
     _controller.forward();
+    // Si ya tienes un almacén seleccionado, podrías iniciar la suscripción
+    // _subscribeToProductChanges();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _pageController.dispose();
+    _productSubscription?.cancel();
     super.dispose();
   }
+
+  /// Suscribe a los cambios en la colección "productos" para el almacén seleccionado
+  void _subscribeToProductChanges() {
+    if (_selectedAlmacen == null) return;
+    // Cancelamos la suscripción anterior, si existe
+    _productSubscription?.cancel();
+    _productSubscription = FirebaseFirestore.instance
+        .collection('productos')
+        .where('UidAlma', isEqualTo: _selectedAlmacen)
+        .snapshots()
+        .listen((snapshot) {
+      // Revisar cada documento para detectar stock bajo (<10)
+      for (var doc in snapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        int stock = int.tryParse(data['Stock'].toString()) ?? 0;
+        if (stock < 10) {
+          String productName = data['Nombre'] ?? 'Producto sin nombre';
+          bool exists = _notifications.any((n) => n.producto == productName);
+          if (!exists) {
+            NotificationItem newNotification = NotificationItem(
+              almacen: _selectedAlmacen!,
+              producto: productName,
+              date: DateTime.now(),
+            );
+            setState(() {
+              _notifications.add(newNotification);
+            });
+            _showNotification(newNotification);
+          }
+        }
+      }
+    });
+  }
+
+  /// Verifica los productos con stock bajo y agrega notificaciones si corresponde.
+  Future<void> _checkLowStockNotifications() async {
+    if (_selectedAlmacen == null) return;
+    // Obtiene los productos con stock menor al límite (por ejemplo, 10)
+    List<Map<String, dynamic>> lowStockProducts =
+    await getProductosMenorStock(_selectedAlmacen!);
+    // Para cada producto con bajo stock, agrega una notificación (si no existe ya)
+    for (var product in lowStockProducts) {
+      String productName = product['nombre'] ?? 'Producto sin nombre';
+      bool exists = _notifications.any((n) => n.producto == productName);
+      if (!exists) {
+        NotificationItem newNotification = NotificationItem(
+          almacen: _selectedAlmacen!,
+          producto: productName,
+          date: DateTime.now(),
+        );
+        setState(() {
+          _notifications.add(newNotification);
+        });
+        await _showNotification(newNotification);
+      }
+    }
+  }
+
+  Future<void> _showNotification(NotificationItem notificationItem) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'low_stock_channel', // id del canal
+      'Low Stock Notifications', // nombre del canal
+      channelDescription: 'Notificaciones para productos con stock bajo',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // ID de la notificación (puedes usar un número único si manejas múltiples)
+      'Stock bajo: ${notificationItem.producto}', // Título
+      'El producto ${notificationItem.producto} en el almacén ${notificationItem.almacen} tiene stock bajo.', // Cuerpo
+      platformChannelSpecifics,
+      payload: 'LowStock',
+    );
+  }
+
+  /// Muestra en una hoja modal la lista de notificaciones
+  void _showNotifications() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(10),
+        height: 300,
+        child: _notifications.isNotEmpty
+            ? ListView.builder(
+          itemCount: _notifications.length,
+          itemBuilder: (context, index) {
+            final noti = _notifications[index];
+            return Dismissible(
+              key: Key(noti.producto + noti.date.toString()),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: Colors.red,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: const Text(
+                  'Ignorar',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              onDismissed: (direction) {
+                setState(() {
+                  // Marcar la notificación como ignorada
+                  noti.ignored = true;
+                });
+              },
+              child: ListTile(
+                leading: const Icon(Icons.warning, color: Colors.red),
+                title: Text("Stock bajo: ${noti.producto}"),
+                subtitle: noti.ignored
+                    ? const Text("Ignorado",
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic))
+                    : Text(
+                    "Almacén: ${noti.almacen}\n${DateFormat('yyyy-MM-dd HH:mm').format(noti.date)}"),
+              ),
+            );
+          },
+        )
+            : const Center(child: Text("No hay notificaciones")),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -122,42 +282,47 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
         'Bienvenido',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
-    );
-  }
-
-  /// Sección superior que muestra:
-  /// - Un título.
-  /// - Un Dropdown para seleccionar el almacén.
-  /// - Un conjunto de ChoiceChips para elegir el filtro por día, semana o mes.
-  Widget _buildTimeRangeSelector() {
-    if (_selectedTimeFilter != "day") return Container();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Rango de horas (AM): $_startHour - ${_endHour == 24 ? '12' : _endHour.toString()}",
-          style: const TextStyle(fontSize: 12),
-        ),
-        RangeSlider(
-          min: 0,
-          max: 24,
-          divisions: 24,
-          values: RangeValues(_startHour.toDouble(), _endHour.toDouble()),
-          onChanged: (RangeValues values) {
-            setState(() {
-              _startHour = values.start.round();
-              _endHour = values.end.round();
-            });
-          },
-          labels: RangeLabels(
-            _startHour.toString(),
-            _endHour == 24 ? "12" : _endHour.toString(),
-          ),
+      actions: [
+        // Icono de notificaciones con badge
+        Stack(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: () {
+                _showNotifications();
+              },
+            ),
+            if (_notifications.isNotEmpty)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '${_notifications.length}', // Número dinámico de notificaciones
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
       ],
     );
   }
-  /// - La gráfica de ventas según el filtro.
+
+  /// Sección superior: título, dropdown de almacenes, filtros y gráfica.
   Widget _buildTopSection() {
     return Container(
       padding: const EdgeInsets.all(10),
@@ -182,8 +347,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
     );
   }
 
-
-
   /// Dropdown para seleccionar el almacén.
   Widget _buildWarehouseDropdown() {
     return FutureBuilder<List>(
@@ -201,6 +364,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
         }
         // Seleccionar el primer almacén por defecto
         _selectedAlmacen ??= almacenes[0]['uidAlma'];
+        // Al cambiar el almacén, reiniciamos notificaciones y suscribimos a los cambios en productos
         return DropdownButton<String>(
           value: _selectedAlmacen,
           items: almacenes.map<DropdownMenuItem<String>>((almacen) {
@@ -212,6 +376,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           onChanged: (newVal) {
             setState(() {
               _selectedAlmacen = newVal;
+              _notifications.clear(); // Reinicia las notificaciones
+              _checkLowStockNotifications(); // Revisa notificaciones para el almacén actual
+              _subscribeToProductChanges(); // Suscribe a cambios en los productos para el nuevo almacén
             });
           },
         );
@@ -257,14 +424,41 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
     );
   }
 
-  /// Gráfica de ventas filtradas según el almacén y el período seleccionado.
-  /// Se consulta Firestore por las ventas que ocurran a partir de una fecha calculada
-  /// y se agrupan por día para mostrar un total por fecha.
+  /// Selector de rango de horas para el filtro "día".
+  Widget _buildTimeRangeSelector() {
+    if (_selectedTimeFilter != "day") return Container();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "Rango de horas (AM): $_startHour - ${_endHour == 24 ? '12' : _endHour.toString()}",
+          style: const TextStyle(fontSize: 12),
+        ),
+        RangeSlider(
+          min: 0,
+          max: 24,
+          divisions: 24,
+          values: RangeValues(_startHour.toDouble(), _endHour.toDouble()),
+          onChanged: (RangeValues values) {
+            setState(() {
+              _startHour = values.start.round();
+              _endHour = values.end.round();
+            });
+          },
+          labels: RangeLabels(
+            _startHour.toString(),
+            _endHour == 24 ? "12" : _endHour.toString(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Gráfica de ventas según el filtro.
   Widget _buildSalesChart() {
     if (_selectedAlmacen == null) {
       return const Center(child: Text("Seleccione un almacén"));
     }
-    // Determinar la fecha de inicio según el filtro seleccionado
     DateTime now = DateTime.now();
     DateTime startDate;
     if (_selectedTimeFilter == "day") {
@@ -294,15 +488,12 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           return const Center(child: Text("No hay ventas registradas"));
         }
 
-        // Filtro "día": agrupar las ventas por hora usando el rango seleccionado
         if (_selectedTimeFilter == "day") {
-          // Crear una lista de ventas individuales que ocurren dentro del rango seleccionado
           List<Map<String, dynamic>> salesList = [];
           for (var doc in docs) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
             Timestamp ts = data['fecha'];
             DateTime saleDate = ts.toDate();
-            // Solo consideramos ventas dentro del rango seleccionado (_startHour a _endHour)
             if (saleDate.hour >= _startHour && saleDate.hour <= _endHour) {
               double saleTotal = 0.0;
               if (data['totalVenta'] is num) {
@@ -317,10 +508,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             }
           }
 
-          // Ordenar las ventas por fecha
           salesList.sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
 
-          // Crear barras individuales para cada venta
           List<BarChartGroupData> barGroups = [];
           for (int i = 0; i < salesList.length; i++) {
             double total = salesList[i]['total'] as double;
@@ -338,7 +527,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             );
           }
 
-          // Calcular el máximo para el eje Y
           double maxY = 0;
           if (barGroups.isNotEmpty) {
             maxY = barGroups
@@ -352,14 +540,12 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           double step = maxY / 10;
           if (step < 1) step = 1;
 
-          // Definir el widget para las etiquetas en el eje X (solo en la parte inferior)
           SideTitles bottomTitles = SideTitles(
             showTitles: true,
             interval: 1,
             getTitlesWidget: (value, meta) {
               int index = value.toInt();
               if (index < 0 || index >= salesList.length) return Container();
-              // Para evitar saturar, mostramos la etiqueta solo para cada 2do elemento
               if (index % 2 != 0) return Container();
               DateTime saleDate = salesList[index]['date'] as DateTime;
               String label = "${saleDate.hour.toString().padLeft(2, '0')}:${saleDate.minute.toString().padLeft(2, '0')}";
@@ -370,14 +556,12 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             },
           );
 
-          // Envolver el gráfico en un SingleChildScrollView para permitir scroll horizontal
           return Column(
             children: [
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: SizedBox(
-                    // Ajusta el ancho según la cantidad de ventas individuales
                     width: barGroups.length * 30.0,
                     child: BarChart(
                       BarChartData(
@@ -386,9 +570,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
-
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                              // Verifica que el índice esté en el rango de salesList
                               if (groupIndex < 0 || groupIndex >= salesList.length) return null;
                               final sale = salesList[groupIndex];
                               final saleTotal = sale['total'] as double;
@@ -402,7 +584,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                             },
                           ),
                         ),
-
                         titlesData: FlTitlesData(
                           show: true,
                           topTitles: AxisTitles(
@@ -434,7 +615,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                       ),
                     ),
                   ),
-
                 ),
               ),
               const SizedBox(height: 8),
@@ -443,7 +623,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                 children: [
                   const Text("Hora (HH:mm)", style: TextStyle(fontSize: 12)),
                   Text(
-                    "Total de Ventas del Día: \$${totalVentasPeriodo.toStringAsFixed(2)}",
+                    _selectedTimeFilter == "week"
+                        ? "Total de Ventas de la Semana: \$${totalVentasPeriodo.toStringAsFixed(2)}"
+                        : "Total de Ventas del Mes: \$${totalVentasPeriodo.toStringAsFixed(2)}",
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
@@ -451,14 +633,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             ],
           );
 
-        }
-
-
-        else {
-          // ... Lógica para "week" y "month" (se mantiene igual)
-          // (Puedes dejar tu código actual para esos casos)
-
-          // Agrupar las ventas por día (clave: "día/mes/año")
+        } else {
+          // Lógica para "week" y "month" (se mantiene similar a la lógica actual)
           Map<String, double> aggregatedData = {};
           for (var doc in docs) {
             Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -473,8 +649,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             }
             aggregatedData[key] = (aggregatedData[key] ?? 0) + total;
           }
-
-          // Ordenar las claves (fechas) de forma ascendente
           List<String> sortedKeys = aggregatedData.keys.toList();
           sortedKeys.sort((a, b) {
             List<String> partsA = a.split('/');
@@ -491,8 +665,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             );
             return dateA.compareTo(dateB);
           });
-
-          // Crear grupos de barras para la gráfica
           List<BarChartGroupData> barGroups = [];
           for (int i = 0; i < sortedKeys.length; i++) {
             double total = aggregatedData[sortedKeys[i]]!;
@@ -509,21 +681,19 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
               ),
             );
           }
-
           double maxY = barGroups
               .map((group) => group.barRods.first.toY)
               .reduce((a, b) => a > b ? a : b) * 1.2;
           double totalVentasPeriodo = aggregatedData.values.fold(0.0, (prev, element) => prev + element);
           double step = maxY / 10;
           if (step < 1) step = 1;
-
           return Column(
             children: [
               Expanded(
                 child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal, // Permite desplazamiento horizontal
+                  scrollDirection: Axis.horizontal,
                   child: SizedBox(
-                    width: barGroups.length * 50.0, // Ajusta el ancho dinámicamente según la cantidad de barras
+                    width: barGroups.length * 50.0,
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
@@ -532,7 +702,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                         titlesData: FlTitlesData(
                           show: true,
                           topTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false), // Oculta los títulos en el eje X superior
+                            sideTitles: SideTitles(showTitles: false),
                           ),
                           bottomTitles: AxisTitles(
                             sideTitles: SideTitles(
@@ -587,14 +757,10 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
               ),
             ],
           );
-
-
         }
       },
     );
   }
-
-
 
   Widget _buildMenuTitle() {
     return const Padding(
@@ -715,12 +881,12 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                   children: [
                     ...masVendidos.take(3).map((prod) => Container(
                       width: 100,
-                      margin: EdgeInsets.all(5),
+                      margin: const EdgeInsets.all(5),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("🔥", style: TextStyle(fontSize: 24)),
-                          SizedBox(height: 5),
+                          const Text("🔥", style: TextStyle(fontSize: 24)),
+                          const SizedBox(height: 5),
                           Text(prod['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
                         ],
                       ),
@@ -730,7 +896,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                       child: Container(
                         width: 100,
                         alignment: Alignment.center,
-                        child: Text("Ver más", style: TextStyle(color: Colors.blue)),
+                        child: const Text("Ver más", style: TextStyle(color: Colors.blue)),
                       ),
                     )
                   ],
@@ -748,12 +914,12 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                   children: [
                     ...menosStock.take(3).map((prod) => Container(
                       width: 100,
-                      margin: EdgeInsets.all(5),
+                      margin: const EdgeInsets.all(5),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("⚠️", style: TextStyle(fontSize: 24)),
-                          SizedBox(height: 5),
+                          const Text("⚠️", style: TextStyle(fontSize: 24)),
+                          const SizedBox(height: 5),
                           Text(prod['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center)
                         ],
                       ),
@@ -763,7 +929,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                       child: Container(
                         width: 100,
                         alignment: Alignment.center,
-                        child: Text("Ver más", style: TextStyle(color: Colors.blue)),
+                        child: const Text("Ver más", style: TextStyle(color: Colors.blue)),
                       ),
                     )
                   ],
@@ -776,7 +942,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
     );
   }
 
-
   void _mostrarMas(BuildContext context, List<Map<String, dynamic>> productos, String emoji) {
     showModalBottomSheet(
       context: context,
@@ -788,20 +953,20 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           itemCount: productos.length,
           itemBuilder: (context, index) => Container(
             width: 120,
-            margin: EdgeInsets.all(5),
+            margin: const EdgeInsets.all(5),
             decoration: BoxDecoration(
                 color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(emoji, style: TextStyle(fontSize: 24)),
-                SizedBox(height: 5),
+                Text(emoji, style: const TextStyle(fontSize: 24)),
+                const SizedBox(height: 5),
                 Text(productos[index]['nombre'], overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 Text(emoji == "🔥"
                     ? "${productos[index]['cantidadVendida']} vendidos"
                     : "Stock: ${productos[index]['stock']}",
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -811,8 +976,6 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       ),
     );
   }
-
-
 
   Widget _buildBottomAppBar() {
     return BottomAppBar(
@@ -845,8 +1008,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       context,
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 400),
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            const VentaPage(),
+        pageBuilder: (context, animation, secondaryAnimation) => const VentaPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,

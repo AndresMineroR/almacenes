@@ -297,26 +297,104 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          // Abre el scanner
           var result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const SimpleBarcodeScannerPage(),
             ),
           );
+
+          print("Resultado del escaneo: $result"); // Debug
           await Future.delayed(const Duration(milliseconds: 500));
+
           if (result != null && result != "-1") {
-            await Navigator.pushNamed(
-              context,
-              '/addProducto',
-              arguments: {"uidProducto": result.toString(), 'uidAlma': uidAlma},
-            );
-            setState(() {});
+            String scannedCode = result.toString();
+
+            // Consulta Firestore para ver si el código escaneado ya existe en este almacén
+            QuerySnapshot query = await FirebaseFirestore.instance
+                .collection('productos')
+                .where('CodigoBarras', isEqualTo: scannedCode)
+                .where('UidAlma', isEqualTo: uidAlma)
+                .get();
+
+            if (query.docs.isNotEmpty) {
+              // El producto ya existe: pedir cantidad a agregar
+              TextEditingController cantidadController = TextEditingController();
+
+              bool? confirmUpdate = await showDialog<bool>(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('Actualizar stock'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Ingrese la cantidad de artículos a agregar:'),
+                        TextField(
+                          controller: cantidadController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(hintText: 'Cantidad'),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Aceptar'),
+                      ),
+                    ],
+                  );
+                },
+              );
+
+              if (confirmUpdate == true) {
+                int cantidadAgregar = int.tryParse(cantidadController.text) ?? 0;
+
+                if (cantidadAgregar > 0) {
+                  DocumentSnapshot productoDoc = query.docs.first;
+                  int stockActual = int.tryParse(productoDoc['Stock'].toString()) ?? 0;
+                  int nuevoStock = stockActual + cantidadAgregar;
+
+                  await FirebaseFirestore.instance
+                      .collection('productos')
+                      .doc(productoDoc.id)
+                      .update({'Stock': nuevoStock.toString()});
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Stock actualizado a $nuevoStock')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Ingrese una cantidad válida')),
+                  );
+                }
+              }
+            } else {
+              // Si el producto no existe, permite agregarlo
+              await Navigator.pushNamed(
+                context,
+                '/addProducto',
+                arguments: {
+                  "uidProducto": scannedCode,
+                  "uidAlma": uidAlma,
+                },
+              );
+              setState(() {});
+            }
           }
         },
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
+
+
+
     );
   }
 }
