@@ -123,25 +123,38 @@ Future<List> getProductosAlmacen(String uidAlma) async{
 }
 
 //función para guardar un producto
-Future<void> addProducto(String uidProducto, String nom, String des, String cat, String pre, String cad, String lt, String uidAlma, String stock, String url) async{
+Future<void> addProducto(
+    String codigoBarras, // Ahora el código de barras es solo un atributo
+    String nom,
+    String des,
+    String cat,
+    String pre,
+    String cad,
+    String lt,
+    String uidAlma,
+    String stock,
+    String url
+    ) async {
   try {
-  await baseInventario.collection('productos').doc(uidProducto).set({
-    'Nombre': nom,
-    'Descripcion': des,
-    'Categoria' : cat,
-    'Precio' : pre,
-    'Caducidad': cad,
-    'Lote': lt,
-    'UidAlma': uidAlma,
-    'Stock': stock,
-    'ImagenProducto': url
-  });
-  print("Producto agregado con éxito: $uidProducto");
+    DocumentReference docRef = await baseInventario.collection('productos').add({
+      'CodigoBarras': codigoBarras, // Se guarda como propiedad del producto
+      'Nombre': nom,
+      'Descripcion': des,
+      'Categoria': cat,
+      'Precio': pre,
+      'Caducidad': cad,
+      'Lote': lt,
+      'UidAlma': uidAlma,
+      'Stock': stock,
+      'ImagenProducto': url
+    });
+
+    print("Producto agregado con éxito: ${docRef.id}"); // ID generado automáticamente
   } catch (e) {
     print("Error al agregar producto: $e");
   }
-
 }
+
 
 
 //función para actualizar un producto
