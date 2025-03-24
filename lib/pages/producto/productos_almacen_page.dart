@@ -250,6 +250,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
               builder: (context) => const SimpleBarcodeScannerPage(),
             ),
           );
+          await Future.delayed(const Duration(milliseconds: 500));
           if (result != null && result != "-1") {
             await Navigator.pushNamed(
               context,
