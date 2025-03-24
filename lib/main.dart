@@ -10,6 +10,7 @@ import 'package:almacenes/pages/producto/productos_almacen_page.dart';
 import 'package:almacenes/pages/scan_page.dart';
 import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:almacenes/config/theme/app_theme.dart';
@@ -19,6 +20,7 @@ import 'package:almacenes/pages/home_page.dart';
 import 'package:almacenes/pages/homeI_page.dart';
 import 'package:almacenes/pages/producto/productos_page.dart';
 import 'package:almacenes/pages/profile_page.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
 import 'package:intl/intl_standalone.dart' if (dart.library.html) 'package:intl/intl_browser.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -28,17 +30,22 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
 
+
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await requestNotificationPermission(); // Solicita permisos antes de continuar
+
   await findSystemLocale();
   await initializeDateFormatting();
+
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
   );
@@ -48,19 +55,32 @@ Future<void> main() async {
 
   final InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
-    // Agrega iOS si lo necesitas
   );
 
   await flutterLocalNotificationsPlugin.initialize(
     initializationSettings,
     onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) async {
-      // Aquí manejas el evento al presionar la notificación.
       debugPrint('Notification payload: ${notificationResponse.payload}');
     },
   );
 
-
   runApp(const MyApp());
+}
+
+Future<void> requestNotificationPermission() async {
+  PermissionStatus status = await Permission.notification.status;
+
+  if (status.isDenied || status.isPermanentlyDenied) {
+    // Si está denegado, solicitar permisos
+    status = await Permission.notification.request();
+  }
+
+  if (status.isGranted) {
+    print("✅ Permisos de notificación concedidos.");
+    await FirebaseMessaging.instance.requestPermission();
+  } else {
+    print("❌ Permisos de notificación denegados.");
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -72,14 +92,13 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme(selectedColor: 6).theme(),
       title: 'MaterialApp',
-      home: AuthWrapper(), // Usamos AuthWrapper para manejar la sesión
+      home: AuthWrapper(),
       routes: {
         '/venta': (context) => VentaPage(),
         '/scan_code_bar': (context) => ScanCode(),
         '/perfil': (context) => Perfil(),
         '/productos': (context) => Productos(),
         '/addProducto': (context) => AddProductoPage(),
-
         '/editProducto': (context) => EditProductoPage(),
         '/mostrarProducto': (context) => MostrarProducto(),
         '/almacenes': (context) => Almacenes(),
@@ -103,36 +122,13 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.active) {
           User? user = snapshot.data;
           if (user == null) {
-            return Login(); // Redirige al Login si no hay sesión activa
+            return Login();
           } else {
-            return HomeI(); // Redirige al HomeI si hay sesión activa
+            return HomeI();
           }
         }
-        return const Center(child: CircularProgressIndicator()); // Muestra un loading mientras verifica el estado
+        return const Center(child: CircularProgressIndicator());
       },
-     // onGenerateRoute: (settings) {
-        // if (settings.name == '/venta') {
-        //final args = settings.arguments as Map<String, dynamic>?;
-
-        //if (args == null || !args.containsKey('uidAlmacen') ||
-        //    !args.containsKey('nombreAlmacen')) {
-        //  return MaterialPageRoute(builder: (context) =>
-      //      Scaffold(
-      //          appBar: AppBar(title: Text("Error")),
-      //          body: Center(child: Text("Faltan argumentos para /venta")),
-    //        ));
-        //    }
-//
-      //        return MaterialPageRoute(
-      //    builder: (context) =>
-      //        VentaPage(
-      //          uidAlmacen: args['uidAlmacen'],
-      //          nombreAlmacen: args['nombreAlmacen'],
-      //        ),
-    //  );
-    //  }
-    //  return null;
-      //},
     );
   }
 }

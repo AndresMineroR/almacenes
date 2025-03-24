@@ -562,7 +562,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: SizedBox(
-                    width: barGroups.length * 30.0,
+                    width: MediaQuery.of(context).size.width * 1.2,
+                    height: 400,
                     child: BarChart(
                       BarChartData(
                         alignment: BarChartAlignment.spaceAround,
@@ -570,6 +571,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                         barTouchData: BarTouchData(
                           enabled: true,
                           touchTooltipData: BarTouchTooltipData(
+                            fitInsideHorizontally: true, // Ajusta el tooltip dentro del gráfico
+                            fitInsideVertically: true, // Evita que el tooltip se salga por arriba
+                            tooltipPadding: const EdgeInsets.all(8),
                             getTooltipItem: (group, groupIndex, rod, rodIndex) {
                               if (groupIndex < 0 || groupIndex >= salesList.length) return null;
                               final sale = salesList[groupIndex];
@@ -624,8 +628,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                   const Text("Hora (HH:mm)", style: TextStyle(fontSize: 12)),
                   Text(
                     _selectedTimeFilter == "week"
-                        ? "Total de Ventas de la Semana: \$${totalVentasPeriodo.toStringAsFixed(2)}"
-                        : "Total de Ventas del Mes: \$${totalVentasPeriodo.toStringAsFixed(2)}",
+                        ? "Total de Ventas: \$${totalVentasPeriodo.toStringAsFixed(2)}"
+                        : "Total de Ventas: \$${totalVentasPeriodo.toStringAsFixed(2)}",
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
@@ -720,7 +724,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
-                              reservedSize: 40,
+                              reservedSize: 80,
                               interval: step,
                               getTitlesWidget: (value, meta) {
                                 int closedValue = (value.toInt() ~/ 10) * 10;
@@ -749,8 +753,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
                   const Text("Fecha (día/mes)", style: TextStyle(fontSize: 12)),
                   Text(
                     _selectedTimeFilter == "week"
-                        ? "Total de Ventas de la Semana: \$${totalVentasPeriodo.toStringAsFixed(2)}"
-                        : "Total de Ventas del Mes: \$${totalVentasPeriodo.toStringAsFixed(2)}",
+                        ? "Total de Ventas: \$${totalVentasPeriodo.toStringAsFixed(2)}"
+                        : "Total de Ventas: \$${totalVentasPeriodo.toStringAsFixed(2)}",
                     style: const TextStyle(fontSize: 12),
                   ),
                 ],
