@@ -44,6 +44,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
         'NombreCat': doc['NombreCat'], // Asegúrate de que el campo 'nombre' exista en la base de datos
       }).toList(),
       ];
+      print(categorias);
     });
   }
 
@@ -81,109 +82,153 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
               future: getProductosAlmacen(uidAlma),
               builder: ((context, snapshot) {
                 if (snapshot.hasData) {
-                  var productos = categoriaSeleccionada != null && categoriaSeleccionada != 'todas'
-                      ? snapshot.data?.where((producto) =>
+                  var productos = (categoriaSeleccionada != null && categoriaSeleccionada != 'todas')
+                      ? (snapshot.data ?? []).where((producto) =>
                   producto['Categoria'] == categoriaSeleccionada).toList()
-                      : snapshot.data;
-
+                      : (snapshot.data ?? []);
+                  print('seleccionada $categoriaSeleccionada');
                   return ListView.builder(
                     itemCount: productos?.length ?? 0,
                     itemBuilder: (context, index) {
                       return ListTile(
                         title: Card(
                           elevation: 5,
-                          margin: EdgeInsets.symmetric(vertical: 8),
+                          margin: const EdgeInsets.symmetric(vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Row(
-                              children: [
-                                Expanded(
+                          child: Stack(
+                            children: [
+                              // Imagen como fondo
+                              Container(
+                                height: 180, // Ajusta la altura de la tarjeta
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12), // Bordes redondeados
+                                  image: DecorationImage(
+                                    image: NetworkImage(productos[index]['ImagenProducto'] ??
+                                        "https://firebasestorage.googleapis.com/v0/b/inventarioabarrotes-935f9.firebasestorage.app/o/productos%2FLa%20marca%20del%20producto%20Definici%C3%B3n%2C%20clasificaci%C3%B3n%2C%20c%C3%B3mo%20nacen%20y%20m%C3%A1s.jpg?alt=media&token=5f3ff423-6ab7-46d4-9387-e2bdab9a602c"),
+                                    fit: BoxFit.cover, // Ajusta la imagen al tamaño del contenedor
+                                  ),
+                                ),
+                              ),
+                              // Contenedor de texto en la parte inferior
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Container(
+                                  width: double.infinity, // Ocupa todo el ancho
+                                  padding: const EdgeInsets.all(12.0),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                        255, 20, 83, 21).withOpacity(0.7), // Fondo oscuro con transparencia
+                                    borderRadius: const BorderRadius.only(
+                                      bottomLeft: Radius.circular(12),
+                                      bottomRight: Radius.circular(12),
+                                    ),
+                                  ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Producto',
-                                        style: TextStyle(
+                                        productos[index]['Nombre'] ?? 'Sin Nombre',
+                                        style: const TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold,
-                                          color: Color.fromARGB(255, 206, 148, 148),
+                                          color: Colors.white,
                                         ),
                                       ),
+                                      const SizedBox(height: 5),
                                       Text(
-                                        'Descripción: ' + productos?[index]['Descripcion'] +
-                                        '\nStock: ' + productos?[index]['Stock'],
-                                        style: TextStyle(
+                                        'Descripción: ${productos[index]['Descripcion'] ?? 'Sin Descripción'}\n'
+                                            'Stock: ${productos[index]['Stock'] ?? 'Sin Stock'}',
+                                        style: const TextStyle(
                                           fontSize: 16,
-                                          color: Colors.black87,
+                                          color: Colors.white,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                PopupMenuButton<String>(
+                              ),
+                              // PopupMenuButton en la esquina superior derecha
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert, color: Colors.white),
                                   onSelected: (String value) async {
                                     if (value == 'editar') {
                                       await Navigator.pushNamed(context, '/editProducto', arguments: {
-                                        "Nombre": productos?[index]['Nombre'],
-                                        "Descripcion": productos?[index]['Descripcion'],
-                                        "Categoria": productos?[index]['Categoria'],
-                                        "Precio": productos?[index]['Precio'],
-                                        "Caducidad": productos?[index]['Caducidad'],
-                                        "Stock": productos?[index]['Stock'],
-                                        "Lote": productos?[index]['Lote'],
-                                        "uid": productos?[index]['uid'],
-                                        "UidAlma": productos?[index]['UidAlma'],
+                                        "Nombre": productos[index]['Nombre'],
+                                        "Descripcion": productos[index]['Descripcion'],
+                                        "Categoria": productos[index]['Categoria'],
+                                        "Precio": productos[index]['Precio'],
+                                        "Caducidad": productos[index]['Caducidad'],
+                                        "Lote": productos[index]['Lote'],
+                                        "Stock": productos[index]['Stock'],
+                                        "uid": productos[index]['uid'],
+                                        'uidAlma': uidAlma,
+                                        "ImagenProducto": productos[index]['ImagenProducto'],
                                       });
+                                      setState(() {});
                                     } else if (value == 'eliminar') {
                                       bool confirmDelete = await showDialog(
                                         context: context,
                                         builder: (BuildContext context) {
                                           return AlertDialog(
-                                            title: Text('Confirmar eliminación'),
-                                            content: Text(
-                                                '¿Estás seguro de que deseas eliminar este elemento?'),
+                                            title: const Text('Confirmar eliminación'),
+                                            content: const Text('¿Estás seguro de que deseas eliminar este producto?'),
                                             actions: <Widget>[
                                               TextButton(
                                                 onPressed: () {
                                                   Navigator.of(context).pop(false);
                                                 },
-                                                child: Text('Cancelar'),
+                                                child: const Text('Cancelar'),
                                               ),
                                               TextButton(
                                                 onPressed: () {
                                                   Navigator.of(context).pop(true);
                                                 },
-                                                child: Text('Eliminar'),
+                                                child: const Text('Eliminar'),
                                               ),
                                             ],
                                           );
                                         },
                                       );
                                       if (confirmDelete == true) {
-                                        await deleteProducto(productos?[index]['uid']);
+                                        await deleteProducto(productos[index]['uidProducto']);
+                                        setState(() {});
                                       }
                                     }
                                   },
                                   itemBuilder: (BuildContext context) {
                                     return [
-                                      PopupMenuItem<String>(
+                                      const PopupMenuItem<String>(
                                         value: 'editar',
                                         child: Text('Editar'),
                                       ),
-                                      PopupMenuItem<String>(
+                                      const PopupMenuItem<String>(
                                         value: 'eliminar',
                                         child: Text('Eliminar'),
                                       ),
                                     ];
                                   },
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
+                        onTap: () async {
+                          await Navigator.pushNamed(context, '/mostrarProducto', arguments: {
+                            "Nombre": productos[index]['Nombre'],
+                            "Descripcion": productos[index]['Descripcion'],
+                            "Categoria": productos[index]['Categoria'],
+                            "Precio": productos[index]['Precio'],
+                            "Caducidad": productos[index]['Caducidad'],
+                            "Lote": productos[index]['Lote'],
+                            "Stock": productos[index]['Stock'],
+                            "ImagenProducto": productos[index]['ImagenProducto'],
+                          });
+                        },
                       );
                     },
                   );
@@ -217,6 +262,8 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
             setState(() {});
           }
         },
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
     );

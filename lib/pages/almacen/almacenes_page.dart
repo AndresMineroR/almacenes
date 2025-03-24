@@ -28,43 +28,73 @@ class _AlmacenesState extends State<Almacenes> {
                 return ListTile(
                   title: Card(
                     elevation: 5,
-                    margin: EdgeInsets.symmetric(vertical: 8),
+                    margin: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
+                    child: Stack(
+                      children: [
+                        // Imagen como fondo
+                        Container(
+                          height: 180, // Ajusta la altura de la tarjeta
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12), // Bordes redondeados
+                            image: DecorationImage(
+                              image: NetworkImage(snapshot.data?[index]['ImagenAlma'] ??
+                                  "https://firebasestorage.googleapis.com/v0/b/inventarioabarrotes-935f9.firebasestorage.app/o/productos%2FLa%20marca%20del%20producto%20Definici%C3%B3n%2C%20clasificaci%C3%B3n%2C%20c%C3%B3mo%20nacen%20y%20m%C3%A1s.jpg?alt=media&token=5f3ff423-6ab7-46d4-9387-e2bdab9a602c"),
+                              fit: BoxFit.cover, // Ajusta la imagen al tamaño del contenedor
+                            ),
+                          ),
+                        ),
+                        // Contenedor de texto en la parte inferior
+                        Align(
+                          alignment: Alignment.bottomRight,
+                          child: Container(
+                            width: double.infinity, // Ocupa todo el ancho
+                            padding: const EdgeInsets.all(12.0),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 91, 15, 110).withOpacity(0.7), // Fondo oscuro con transparencia
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(12),
+                                bottomRight: Radius.circular(12),
+                              ),
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  snapshot.data?[index]['NombreAlma'],
-                                  style: TextStyle(
+                                  snapshot.data?[index]['NombreAlma'] ?? 'Sin Nombre',
+                                  style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Color.fromARGB(255, 206, 148, 148),
+                                    color: Colors.white,
                                   ),
                                 ),
+                                const SizedBox(height: 5),
                                 Text(
-                                  'Descripción: ' + snapshot.data?[index]['DescripcionAlma'],
-                                  style: TextStyle(
+                                  snapshot.data?[index]['DescripcionAlma'] ?? 'Sin Descripción',
+                                  style: const TextStyle(
                                     fontSize: 16,
-                                    color: Colors.black87,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          PopupMenuButton<String>(
+                        ),
+                        // PopupMenuButton en la esquina superior derecha
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: PopupMenuButton<String>(
+                            icon: Icon(Icons.more_vert, color: Colors.white),
                             onSelected: (String value) async {
                               if (value == 'editar') {
                                 await Navigator.pushNamed(context, '/editAlmacen', arguments: {
                                   "NombreAlma": snapshot.data?[index]['NombreAlma'],
                                   "DescripcionAlma": snapshot.data?[index]['DescripcionAlma'],
                                   "uidAlma": snapshot.data?[index]['uidAlma'],
+                                  "ImagenAlma": snapshot.data?[index]['ImagenAlma']
                                 });
                                 setState(() {});
                               } else if (value == 'eliminar') {
@@ -72,20 +102,20 @@ class _AlmacenesState extends State<Almacenes> {
                                   context: context,
                                   builder: (BuildContext context) {
                                     return AlertDialog(
-                                      title: Text('Confirmar eliminación'),
-                                      content: Text('¿Estás seguro de que deseas eliminar este elemento?'),
+                                      title: const Text('Confirmar eliminación'),
+                                      content: const Text('¿Estás seguro de que deseas eliminar este elemento?'),
                                       actions: <Widget>[
                                         TextButton(
                                           onPressed: () {
                                             Navigator.of(context).pop(false);
                                           },
-                                          child: Text('Cancelar'),
+                                          child: const Text('Cancelar'),
                                         ),
                                         TextButton(
                                           onPressed: () {
                                             Navigator.of(context).pop(true);
                                           },
-                                          child: Text('Eliminar'),
+                                          child: const Text('Eliminar'),
                                         ),
                                       ],
                                     );
@@ -95,55 +125,33 @@ class _AlmacenesState extends State<Almacenes> {
                                   await deleteAlmacen(snapshot.data?[index]['uidAlma']);
                                   setState(() {});
                                 }
-                              } /*else if (value == 'agregar') {
-                                var result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SimpleBarcodeScannerPage(),
-                                  ),
-                                );
-
-                                if (result != null && result != "-1") {
-                                  await Navigator.pushNamed(
-                                    context,
-                                    '/addProducto',
-                                    arguments: {
-                                      "uidProducto": result.toString(),
-                                      'uidAlma': snapshot.data?[index]['uidAlma']
-                                    },
-                                  );
-                                  setState(() {});
-                                }
-                              }*/
+                              }
                             },
                             itemBuilder: (BuildContext context) {
                               return [
-                                PopupMenuItem<String>(
+                                const PopupMenuItem<String>(
                                   value: 'editar',
                                   child: Text('Editar'),
                                 ),
-                                PopupMenuItem<String>(
+                                const PopupMenuItem<String>(
                                   value: 'eliminar',
                                   child: Text('Eliminar'),
-                                ),/*
-                                PopupMenuItem<String>(
-                                  value: 'agregar',
-                                  child: Text('Agregar Productos'),
-                                ),*/
+                                ),
                               ];
                             },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                   onTap: () async {
                     await Navigator.pushNamed(context, '/productosAlmacen', arguments: {
                       "uidAlma": snapshot.data?[index]['uidAlma'],
-                      "NombreAlma": snapshot.data?[index]['NombreAlma']
+                      "NombreAlma": snapshot.data?[index]['NombreAlma'],
                     });
                   },
                 );
+
               },
             );
           } else {
@@ -154,10 +162,12 @@ class _AlmacenesState extends State<Almacenes> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
+    onPressed: () async {
           await Navigator.pushNamed(context, '/addAlmacen');
           setState(() {});
         },
+        backgroundColor: Colors.purple,
+        foregroundColor: Colors.white,
         child: const Icon(Icons.add),
       ),
     );

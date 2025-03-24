@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditProductoPage extends StatefulWidget {
   const EditProductoPage({super.key});
@@ -17,9 +21,11 @@ class _EditProductoPageState extends State<EditProductoPage> {
   TextEditingController cadCtrl = TextEditingController();
   TextEditingController ltCtrl = TextEditingController();
   TextEditingController uid = TextEditingController();
-  TextEditingController uidAlma = TextEditingController();
-  TextEditingController cantCtrl = TextEditingController();
-
+  TextEditingController cantidadCtrl = TextEditingController();
+  String imagenU = ""; // Almacena la URL de la imagen cargada
+  String imageUrl = "";
+  bool isUploading = false;
+  String uidAlma = '';
   List<dynamic> categorias = [];
   String? selectedCategoria;
 
@@ -37,10 +43,10 @@ class _EditProductoPageState extends State<EditProductoPage> {
         cadCtrl.text = arguments['Caducidad'];
         ltCtrl.text = arguments['Lote'];
         uid.text = arguments['uid'];
-        uidAlma.text = arguments['UidAlma'];
-        selectedCategoria = arguments['Categoria'];
-        cantCtrl.text = arguments['Stock'];
-
+        selectedCategoria = catCtrl.text;
+        cantidadCtrl.text = arguments['Stock'];
+        imageUrl = arguments['ImagenProducto'];
+        uidAlma = arguments['uidAlma'];
       });
     });
   }
@@ -54,19 +60,75 @@ class _EditProductoPageState extends State<EditProductoPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editar Producto'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(10.0),
-        child: Container(
-          margin: EdgeInsets.all(20.0),
-          child: Form(
-            key: keyForm,
-            child: formUI(),
-          ),
+        child: Column(
+          children: [
+            if (imageUrl.isNotEmpty)
+              Card(
+                elevation: 2,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0),
+                  child: Image.network(
+                    imageUrl,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            ElevatedButton(
+              onPressed: () async {
+                final pickedImage =
+                await ImagePicker().pickImage(source: ImageSource.gallery);
+                if (pickedImage != null) {
+                  setState(() {
+                    isUploading = true;
+                  });
+                  try {
+                    final file = File(pickedImage.path);
+                    final storageRef = FirebaseStorage.instance
+                        .ref()
+                        .child('productos/${uid.text}.jpg');
+                    await storageRef.putFile(file);
+
+                    final downloadUrl = await storageRef.getDownloadURL();
+                    setState(() {
+                      imagenU = downloadUrl;
+                      imageUrl = imagenU;
+                      isUploading = false;
+                    });
+                    print('Imagen actualizada correctamente: $downloadUrl');
+                  } catch (e) {
+                    setState(() {
+                      isUploading = false;
+                    });
+                    print('Error al subir la imagen: $e');
+                  }
+                }
+                Text ('Cambiar Imagen');
+              },
+              child: isUploading
+                  ? const CircularProgressIndicator(
+                  color: Colors.black)
+                  : const Text('Cambiar Imagen'),
+            ),
+            Container(
+              margin: EdgeInsets.all(20.0),
+              child: Form(
+                key: keyForm,
+                child: formUI(),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -108,7 +170,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
           Icons.category,
           categorias.isNotEmpty
               ? DropdownButtonFormField<String>(
-            value: selectedCategoria,
+            value: catCtrl.text,
             decoration: const InputDecoration(labelText: 'Categoría del producto'),
             items: categorias.map<DropdownMenuItem<String>>((cat) {
               return DropdownMenuItem<String>(
@@ -161,7 +223,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
         formItemsDesign(
             Icons.numbers,
             TextFormField(
-              controller: cantCtrl,
+              controller: cantidadCtrl,
               decoration: InputDecoration(
                 labelText: 'Stock del producto',
               ),
@@ -170,9 +232,7 @@ class _EditProductoPageState extends State<EditProductoPage> {
 
         GestureDetector(
             onTap: () async {
-              debugPrint('Categoría seleccionada: $selectedCategoria');
-              debugPrint('Controlador de categoría: ${catCtrl.text}');
-              debugPrint('cantidad de producto: ${cantCtrl.text}');
+              String finalURL = imagenU.isNotEmpty ? imagenU : imageUrl;
               await updateProducto(
                   uid.text,
                   nomCtrl.text,
@@ -181,8 +241,9 @@ class _EditProductoPageState extends State<EditProductoPage> {
                   preCtrl.text,
                   cadCtrl.text,
                   ltCtrl.text,
-                  cantCtrl.text,
-                  uidAlma.text
+                  cantidadCtrl.text,
+                  uidAlma,
+                  finalURL
               ).then((_){
                 Navigator.pop(context);
               });

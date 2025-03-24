@@ -84,6 +84,7 @@ Future<List> getProductos() async{
         "Caducidad": data['Caducidad'],
         "Lote": data['Lote'],
         "Stock": data['Stock'],
+        "ImagenProducto": data['ImagenProducto'],
         "uid": doc.id,
       };
       productos.add(pro);
@@ -97,7 +98,6 @@ Future<List> getProductos() async{
 //función para traer los productos de un almacen
 Future<List> getProductosAlmacen(String uidAlma) async{
   List productos = [];
-  debugPrint('Categoría seleccionada: $uidAlma');
   try{
     QuerySnapshot queryProduct = await baseInventario.collection('productos').where('UidAlma', isEqualTo: uidAlma ).get();
     for (var doc in queryProduct.docs) {
@@ -111,6 +111,7 @@ Future<List> getProductosAlmacen(String uidAlma) async{
         "Lote": data['Lote'],
         "UidAlma": data['UidAlma'],
         "Stock": data['Stock'],
+        "ImagenProducto": data['ImagenProducto'],
         "uid": doc.id,
       };
       productos.add(pro);
@@ -122,7 +123,7 @@ Future<List> getProductosAlmacen(String uidAlma) async{
 }
 
 //función para guardar un producto
-Future<void> addProducto(String uidProducto, String nom, String des, String cat, String pre, String cad, String lt, String uidAlma, String stock) async{
+Future<void> addProducto(String uidProducto, String nom, String des, String cat, String pre, String cad, String lt, String uidAlma, String stock, String url) async{
   try {
   await baseInventario.collection('productos').doc(uidProducto).set({
     'Nombre': nom,
@@ -132,7 +133,8 @@ Future<void> addProducto(String uidProducto, String nom, String des, String cat,
     'Caducidad': cad,
     'Lote': lt,
     'UidAlma': uidAlma,
-    'Stock': stock
+    'Stock': stock,
+    'ImagenProducto': url
   });
   print("Producto agregado con éxito: $uidProducto");
   } catch (e) {
@@ -143,8 +145,8 @@ Future<void> addProducto(String uidProducto, String nom, String des, String cat,
 
 
 //función para actualizar un producto
-Future<void> updateProducto(String uId, String nomNew, String desNew, String catNew, String preNew, String cadNew, String ltNew, String stock, String uidalma) async {
-  await baseInventario.collection('productos').doc(uId).set({
+Future<void> updateProducto(String uId, String nomNew, String desNew, String catNew, String preNew, String cadNew, String ltNew, String stock, String uidalma, String url) async {
+  await baseInventario.collection('productos').doc(uId).update({
     'Nombre': nomNew,
     'Descripcion': desNew,
     'Categoria': catNew,
@@ -152,7 +154,8 @@ Future<void> updateProducto(String uId, String nomNew, String desNew, String cat
     'Caducidad': cadNew,
     'Lote': ltNew,
     'Stock': stock,
-    'UidAlma': uidalma
+    'UidAlma': uidalma,
+    'ImagenProducto': url
   });
 }
 //función para borrar un producto
@@ -172,6 +175,7 @@ Future<List> getAlmacenes() async{
         "DescripcionAlma": data['DescripcionAlma'],
         "IdPropietario": data['IdPropietario'],
         "uidAlma": doc.id,
+        "ImagenAlma": data['ImagenAlma'],
       };
       Almacenes.add(alma);
     }
@@ -181,19 +185,21 @@ Future<List> getAlmacenes() async{
   return Almacenes;
 }
 //función para guardar un almacen
-Future<void> addAlmacen(String nomAlm, String desAlm, String uidAlm) async{
+Future<void> addAlmacen(String nomAlm, String desAlm, String imagenUrl, String usId) async{
   await baseInventario.collection('almacenes').add({
     'NombreAlma': nomAlm,
     'DescripcionAlma': desAlm,
-    'IdPropietario': uidAlm
+    'ImagenAlma': imagenUrl,
+    'IdPropietario': usId,
   });
 }
 //función para actualizar un almacen
-Future<void> updateAlmacen(String uidAlm, String nomNewAlm, String desNewAlm) async {
+Future<void> updateAlmacen(String uidAlm, String nomNewAlm, String desNewAlm, String url) async {
   await baseInventario.collection('almacenes').doc(uidAlm).set({
+    'uidAlma': uidAlm,
     'NombreAlma': nomNewAlm,
     'DescripcionAlma': desNewAlm,
-    'uidAlma': uidAlm
+    'ImagenAlma': url
   });
 }
 //función para borrar un almacen

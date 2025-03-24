@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:date_field/date_field.dart'; // Asegúrate de que esté importado
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class AddProductoPage extends StatefulWidget {
@@ -24,6 +28,7 @@ class _AddProductoPageState extends State<AddProductoPage> {
 
   List<dynamic> categorias = [];
   String? selectedCategoria;
+  String imageUrl = '';
 
   @override
   void initState() {
@@ -170,6 +175,60 @@ class _AddProductoPageState extends State<AddProductoPage> {
               keyboardType: TextInputType.number,
             )),
 
+        formItemsDesign(
+          Icons.image,
+          Column(
+            children: [
+              ElevatedButton(
+                onPressed: () async {
+                  final pickedImage = await ImagePicker().pickImage(source: ImageSource.gallery);
+                  if (pickedImage != null) {
+                    try {
+                      final file = File(pickedImage.path);
+
+                      // Subir la imagen a Firebase Storage
+                      final storageRef = FirebaseStorage.instance
+                          .ref()
+                          .child('almacenes/${nomCtrl.text}.jpg');
+
+                      await storageRef.putFile(file);
+
+                      // Obtener URL de la imagen
+                      final downloadUrl = await storageRef.getDownloadURL();
+                      setState(() {
+                        imageUrl = downloadUrl; // Guardar la URL de la imagen
+                      });
+
+                      print('Imagen subida correctamente: $downloadUrl');
+                    } catch (e) {
+                      print('Error al subir la imagen: $e');
+                    }
+                  } else {
+                    print('No se seleccionó ninguna imagen.');
+                  }
+                },
+                child: const Text('Seleccionar Imagen'),
+              ),
+            ],
+          ),
+        ),
+        if (imageUrl.isNotEmpty)
+          Card(elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20.0),
+              child: Image.network(
+                imageUrl,
+                height: 180,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+
         GestureDetector(
           onTap: () async {
             await addProducto(
@@ -181,7 +240,8 @@ class _AddProductoPageState extends State<AddProductoPage> {
               cadCtrl.text,
               ltCtrl.text,
               uidAlma.text,
-              cantCtrl.text
+              cantCtrl.text,
+              imageUrl
             ).then((_){
               Navigator.pop(context);
             });
