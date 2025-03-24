@@ -1,23 +1,30 @@
+import 'dart:async'; // Asegúrate de importar dart:async
 import 'package:almacenes/servicies/firebase_service.dart';
 import 'package:almacenes/pages/venta/venta_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
+
+import '../main.dart';
 
 /// Clase para representar una notificación de stock bajo
 class NotificationItem {
   final String almacen;
   final String producto;
   final DateTime date;
+  bool ignored; // Nueva propiedad
 
   NotificationItem({
     required this.almacen,
     required this.producto,
     required this.date,
+    this.ignored = false,
   });
 }
+
 
 class HomeI extends StatefulWidget {
   final AnimationController? animationController;
@@ -42,6 +49,9 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
 
   // Lista de notificaciones de stock bajo
   List<NotificationItem> _notifications = [];
+
+  // Suscripción al stream de cambios en los productos
+  StreamSubscription<QuerySnapshot>? _productSubscription;
 
   final List<Map<String, dynamic>> _menuItems = [
     {
@@ -84,13 +94,49 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
     _animation =
         CurvedAnimation(parent: _controller, curve: Curves.fastOutSlowIn);
     _controller.forward();
+    // Si ya tienes un almacén seleccionado, podrías iniciar la suscripción
+    // _subscribeToProductChanges();
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _pageController.dispose();
+    _productSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Suscribe a los cambios en la colección "productos" para el almacén seleccionado
+  void _subscribeToProductChanges() {
+    if (_selectedAlmacen == null) return;
+    // Cancelamos la suscripción anterior, si existe
+    _productSubscription?.cancel();
+    _productSubscription = FirebaseFirestore.instance
+        .collection('productos')
+        .where('UidAlma', isEqualTo: _selectedAlmacen)
+        .snapshots()
+        .listen((snapshot) {
+      // Revisar cada documento para detectar stock bajo (<10)
+      for (var doc in snapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        int stock = int.tryParse(data['Stock'].toString()) ?? 0;
+        if (stock < 10) {
+          String productName = data['Nombre'] ?? 'Producto sin nombre';
+          bool exists = _notifications.any((n) => n.producto == productName);
+          if (!exists) {
+            NotificationItem newNotification = NotificationItem(
+              almacen: _selectedAlmacen!,
+              producto: productName,
+              date: DateTime.now(),
+            );
+            setState(() {
+              _notifications.add(newNotification);
+            });
+            _showNotification(newNotification);
+          }
+        }
+      }
+    });
   }
 
   /// Verifica los productos con stock bajo y agrega notificaciones si corresponde.
@@ -104,16 +150,39 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       String productName = product['nombre'] ?? 'Producto sin nombre';
       bool exists = _notifications.any((n) => n.producto == productName);
       if (!exists) {
+        NotificationItem newNotification = NotificationItem(
+          almacen: _selectedAlmacen!,
+          producto: productName,
+          date: DateTime.now(),
+        );
         setState(() {
-          _notifications.add(NotificationItem(
-            almacen: _selectedAlmacen!,
-            producto: productName,
-            date: DateTime.now(),
-          ));
+          _notifications.add(newNotification);
         });
-        // Aquí podrías también disparar una notificación local usando flutter_local_notifications.
+        await _showNotification(newNotification);
       }
     }
+  }
+
+  Future<void> _showNotification(NotificationItem notificationItem) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    AndroidNotificationDetails(
+      'low_stock_channel', // id del canal
+      'Low Stock Notifications', // nombre del canal
+      channelDescription: 'Notificaciones para productos con stock bajo',
+      importance: Importance.max,
+      priority: Priority.high,
+      ticker: 'ticker',
+    );
+    const NotificationDetails platformChannelSpecifics =
+    NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // ID de la notificación (puedes usar un número único si manejas múltiples)
+      'Stock bajo: ${notificationItem.producto}', // Título
+      'El producto ${notificationItem.producto} en el almacén ${notificationItem.almacen} tiene stock bajo.', // Cuerpo
+      platformChannelSpecifics,
+      payload: 'LowStock',
+    );
   }
 
   /// Muestra en una hoja modal la lista de notificaciones
@@ -128,11 +197,36 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
           itemCount: _notifications.length,
           itemBuilder: (context, index) {
             final noti = _notifications[index];
-            return ListTile(
-              leading: const Icon(Icons.warning, color: Colors.red),
-              title: Text("Stock bajo: ${noti.producto}"),
-              subtitle: Text(
-                  "Almacén: ${noti.almacen}\n${DateFormat('yyyy-MM-dd HH:mm').format(noti.date)}"),
+            return Dismissible(
+              key: Key(noti.producto + noti.date.toString()),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                color: Colors.red,
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: const Text(
+                  'Ignorar',
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+              onDismissed: (direction) {
+                setState(() {
+                  // Marcar la notificación como ignorada
+                  noti.ignored = true;
+                });
+              },
+              child: ListTile(
+                leading: const Icon(Icons.warning, color: Colors.red),
+                title: Text("Stock bajo: ${noti.producto}"),
+                subtitle: noti.ignored
+                    ? const Text("Ignorado",
+                    style: TextStyle(
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic))
+                    : Text(
+                    "Almacén: ${noti.almacen}\n${DateFormat('yyyy-MM-dd HH:mm').format(noti.date)}"),
+              ),
             );
           },
         )
@@ -140,6 +234,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +347,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
         }
         // Seleccionar el primer almacén por defecto
         _selectedAlmacen ??= almacenes[0]['uidAlma'];
-        // Al cambiar el almacén, también verificamos notificaciones de stock bajo
+        // Al cambiar el almacén, reiniciamos notificaciones y suscribimos a los cambios en productos
         return DropdownButton<String>(
           value: _selectedAlmacen,
           items: almacenes.map<DropdownMenuItem<String>>((almacen) {
@@ -265,7 +360,8 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
             setState(() {
               _selectedAlmacen = newVal;
               _notifications.clear(); // Reinicia las notificaciones
-              _checkLowStockNotifications(); // Revisa y agrega notificaciones para el almacén actual
+              _checkLowStockNotifications(); // Revisa notificaciones para el almacén actual
+              _subscribeToProductChanges(); // Suscribe a cambios en los productos para el nuevo almacén
             });
           },
         );
@@ -519,6 +615,7 @@ class _HomeState extends State<HomeI> with SingleTickerProviderStateMixin {
               ),
             ],
           );
+
         } else {
           // Lógica para "week" y "month" (se mantiene similar a la lógica actual)
           Map<String, double> aggregatedData = {};

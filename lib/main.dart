@@ -24,9 +24,15 @@ import 'package:intl/intl_standalone.dart' if (dart.library.html) 'package:intl/
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
-void main() async {
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+FlutterLocalNotificationsPlugin();
+
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -36,6 +42,24 @@ void main() async {
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.playIntegrity,
   );
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  final InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+    // Agrega iOS si lo necesitas
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initializationSettings,
+    onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) async {
+      // Aquí manejas el evento al presionar la notificación.
+      debugPrint('Notification payload: ${notificationResponse.payload}');
+    },
+  );
+
+
   runApp(const MyApp());
 }
 
@@ -55,6 +79,7 @@ class MyApp extends StatelessWidget {
         '/perfil': (context) => Perfil(),
         '/productos': (context) => Productos(),
         '/addProducto': (context) => AddProductoPage(),
+
         '/editProducto': (context) => EditProductoPage(),
         '/mostrarProducto': (context) => MostrarProducto(),
         '/almacenes': (context) => Almacenes(),
