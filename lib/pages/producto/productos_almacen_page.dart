@@ -88,7 +88,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                       : (snapshot.data ?? []);
                   print('seleccionada $categoriaSeleccionada');
                   return ListView.builder(
-                    itemCount: productos?.length ?? 0,
+                    itemCount: productos.length ?? 0,
                     itemBuilder: (context, index) {
                       return ListTile(
                         title: Card(
@@ -195,7 +195,7 @@ class _ProductosAlmacenState extends State<ProductosAlmacen> {
                                         },
                                       );
                                       if (confirmDelete == true) {
-                                        await deleteProducto(productos[index]['uidProducto']);
+                                        await deleteProducto(productos[index]['uid']);
                                         setState(() {});
                                       }
                                     }
