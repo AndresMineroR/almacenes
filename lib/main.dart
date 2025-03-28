@@ -16,7 +16,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:almacenes/config/theme/app_theme.dart';
 import 'package:almacenes/pages/producto/add_producto_page.dart';
 import 'package:almacenes/pages/producto/edit_producto_page.dart';
-import 'package:almacenes/pages/home_page.dart';
 import 'package:almacenes/pages/homeI_page.dart';
 import 'package:almacenes/pages/producto/productos_page.dart';
 import 'package:almacenes/pages/profile_page.dart';
@@ -25,7 +24,6 @@ import 'firebase_options.dart';
 import 'package:intl/intl_standalone.dart' if (dart.library.html) 'package:intl/intl_browser.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 
